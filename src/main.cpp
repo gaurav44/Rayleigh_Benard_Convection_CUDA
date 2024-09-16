@@ -6,14 +6,16 @@
 #include "PressureSolver.hpp"
 #include "DataStructure.hpp"
 
+#define BLOCK_SIZE = 8;
+
 int main() {
     Domain domain;
 
     domain.xlength = 8.5;
     domain.ylength = 1;
     domain.nu = 0.0296;                      //Kinematic Viscosity
-    domain.Re = 1/domain.nu;                  //Reynold's number 
-    domain.alpha = 0.00000237;              //Thermal diffusivity
+    domain.Re = 1/domain.nu;                 //Reynold's number 
+    domain.alpha = 0.00000237;               //Thermal diffusivity
     domain.Pr = domain.nu/domain.alpha;                        //Prandtl number
     domain.beta = 0.00179;                     //Coefficient of thermal expansion (used in Boussinesq approx)
     domain.tau = 0.5;                          //Safety factor for timestep
@@ -33,6 +35,7 @@ int main() {
     fields.G = Matrix<double>(domain.imax+2,domain.jmax+2);
     fields.P = Matrix<double>(domain.imax+2,domain.jmax+2);
     fields.T = Matrix<double>(domain.imax+2,domain.jmax+2, 293.0);
+    fields.T_old = Matrix<double>(domain.imax+2,domain.jmax+2, 293.0);
     fields.RS = Matrix<double>(domain.imax+2,domain.jmax+2,0.0); 
 
     double t_end = 15000;
@@ -52,39 +55,40 @@ int main() {
     // Time loop
     while (t<t_end) {
         Simulation::calculate_dt(domain, fields);
+        fields.U.copyToDevice();
         Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
     //     // fields.T.printField();
-    //     Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F, fields.G, domain);
+        Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F, fields.G, domain);
     //     // std::cout << "\n";
     //     // fields.F.printField();
     //     // std::cout << "\n";
     //     // fields.G.printField();
-    //     Simulation::calculate_rs(fields.F, fields.G, fields.RS, domain);
+        Simulation::calculate_rs(fields.F, fields.G, fields.RS, domain);
     //     // std::cout << "\n";
     //     // fields.RS.printField();
 
-    //     int iter = 0;
-    //     double res = 10;
+        int iter = 0;
+        double res = 10;
 
-    //     while (res > eps) {
-    //         if (iter >= itermax) {
-    //             std::cout << "Pressure solver not converged\n";
-    //             std::cout << "dt: " << domain.dt << "Time: " <<  " residual:" << res << " iterations: " << iter << "\n";
-    //             break;
-    //         }
-    //         Boundary::apply_pressure(fields.P, domain);
-    //         // std::cout << "\n";
-    //         // fields.P.printField();
-    //         res = PressureSolver::calculate_pressure(fields.P, fields.RS, domain, omg);
-    //         iter++;
-    //     }
+        while (res > eps) {
+            if (iter >= itermax) {
+                std::cout << "Pressure solver not converged\n";
+                std::cout << "dt: " << domain.dt << "Time: " <<  " residual:" << res << " iterations: " << iter << "\n";
+                break;
+            }
+            Boundary::apply_pressure(fields.P, domain);
+            // std::cout << "\n";
+            // fields.P.printField();
+            res = PressureSolver::calculate_pressure(fields.P, fields.RS, domain, omg);
+            iter++;
+        }
        
-    //     Simulation::calculate_velocities(fields.U, fields.V, fields.F, fields.G, fields.P, domain);
-    //     Boundary::apply_boundaries(fields, domain, Th, Tc);
+        Simulation::calculate_velocities(fields.U, fields.V, fields.F, fields.G, fields.P, domain);
+        Boundary::apply_boundaries(fields, domain, Th, Tc);
 
-    //     if(timestep%500 == 0)
-    //         std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res << " iterations: " << iter << "\n";
-    //     t = t + domain.dt;    
-    //     timestep++;
+        if(timestep%500 == 0)
+            std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res << " iterations: " << iter << "\n";
+        t = t + domain.dt;    
+        timestep++;
     }
 }

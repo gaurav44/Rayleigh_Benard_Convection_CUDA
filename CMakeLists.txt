@@ -24,6 +24,8 @@ set(SOURCES_CPP
 set(SOURCES_CU
     src/DataStructure.cu
     src/Simulation.cu
+    src/Discretization.cu
+    src/PressureSolver.cu
 )
 
 add_executable(main ${SOURCES_CPP} ${SOURCES_CU})

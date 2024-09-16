@@ -26,5 +26,10 @@ T& Matrix<T>::operator()(int i, int j) { return _container[_imax * j + i];}
 template<typename T>
 T Matrix<T>::operator()(int i, int j) const { return _container[_imax * j + i];}
 
+template<typename T>
+void Matrix<T>::copyToDevice() {
+    thrust::copy(d_container.begin(), d_container.end(), _container.begin());
+}
+
 template class Matrix<float>;
 template class Matrix<double>;

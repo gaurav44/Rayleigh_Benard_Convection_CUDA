@@ -10,6 +10,7 @@ class Fields {
         Matrix<double> F;
         Matrix<double> G;
         Matrix<double> T;
+        Matrix<double> T_old;
         Matrix<double> P;
         Matrix<double> RS;
 
