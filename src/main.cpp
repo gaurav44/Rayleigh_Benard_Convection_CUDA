@@ -29,14 +29,14 @@ int main() {
     domain.dt = 0.05;                          //Timestep 
 
     Fields fields;
-    fields.U = Matrix<double>(domain.imax+2,domain.jmax+2);
-    fields.V = Matrix<double>(domain.imax+2,domain.jmax+2);
-    fields.F = Matrix<double>(domain.imax+2,domain.jmax+2);
-    fields.G = Matrix<double>(domain.imax+2,domain.jmax+2);
-    fields.P = Matrix<double>(domain.imax+2,domain.jmax+2);
-    fields.T = Matrix<double>(domain.imax+2,domain.jmax+2, 293.0);
-    fields.T_old = Matrix<double>(domain.imax+2,domain.jmax+2, 293.0);
-    fields.RS = Matrix<double>(domain.imax+2,domain.jmax+2,0.0); 
+    fields.U = Matrix(domain.imax+2,domain.jmax+2);
+    fields.V = Matrix(domain.imax+2,domain.jmax+2);
+    fields.F = Matrix(domain.imax+2,domain.jmax+2);
+    fields.G = Matrix(domain.imax+2,domain.jmax+2);
+    fields.P = Matrix(domain.imax+2,domain.jmax+2);
+    fields.T = Matrix(domain.imax+2,domain.jmax+2, 293.0);
+    fields.T_old = Matrix(domain.imax+2,domain.jmax+2, 293.0);
+    fields.RS = Matrix(domain.imax+2,domain.jmax+2,0.0); 
 
     double t_end = 15000;
     double omg = 1.7;                                 //SOR relaxation factor
@@ -55,7 +55,7 @@ int main() {
     // Time loop
     while (t<t_end) {
         Simulation::calculate_dt(domain, fields);
-//        fields.U.copyToDevice();
+     
         Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
     //     // fields.T.printField();
         Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F, fields.G, domain);

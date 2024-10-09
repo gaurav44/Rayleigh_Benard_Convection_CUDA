@@ -5,13 +5,13 @@ class Fields {
     public: 
         Fields() = default;
 
-        Matrix<double> U;
-        Matrix<double> V;
-        Matrix<double> F;
-        Matrix<double> G;
-        Matrix<double> T;
-        Matrix<double> T_old;
-        Matrix<double> P;
-        Matrix<double> RS;
+        Matrix U;
+        Matrix V;
+        Matrix F;
+        Matrix G;
+        Matrix T;
+        Matrix T_old;
+        Matrix P;
+        Matrix RS;
 
 };

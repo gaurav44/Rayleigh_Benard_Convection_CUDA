@@ -42,7 +42,7 @@ class Boundary {
         };
 
 
-        static void apply_pressure(Matrix<double>& p,
+        static void apply_pressure(Matrix& p,
                                    const Domain& domain) {
             int imaxb = domain.imax + 2;
             int jmaxb = domain.jmax + 2; 

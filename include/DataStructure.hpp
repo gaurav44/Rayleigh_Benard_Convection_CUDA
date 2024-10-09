@@ -1,20 +1,22 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
 #include <thrust/copy.h>
+#include <thrust/device_reference.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <vector>
 
 /**
  * @brief General 2D data structure around std::vector, in column
  * major format.
  *
  */
-template <typename T>
+struct DEV {};
+// template <typename T>
 class Matrix {
- public:
-  Matrix<T>();// = default;
+public:
+  Matrix(); // = default;
 
   /**
    * @brief Constructor with initial value
@@ -24,8 +26,8 @@ class Matrix {
    * @param[in] initial value for the elements
    *
    */
-    Matrix<T>(int i_max, int j_max, double init_val);
-  
+  Matrix(int i_max, int j_max, double init_val);
+
   /**
    * @brief Constructor without an initial value.
    *
@@ -33,7 +35,14 @@ class Matrix {
    * @param[in] number of elements in y direction
    *
    */
-  Matrix<T>(int i_max, int j_max);
+  Matrix(int i_max, int j_max);
+
+  // Copy constructor
+  Matrix(const Matrix &other)
+      : _imax(other._imax), _jmax(other._jmax), _container(other._container),
+        h_container(other.h_container), d_container(other.h_container) {}
+
+  Matrix &operator=(const Matrix &other);
 
   /**
    * @brief Element access and modify using index
@@ -42,7 +51,9 @@ class Matrix {
    * @param[in] y index
    * @param[out] reference to the value
    */
-  T &operator()(int i, int j); //{ return _container.at(_imax * j + i); }
+  double &operator()(int i, int j);
+
+  thrust::device_reference<double> operator()(DEV, int i, int j);
 
   /**
    * @brief Element access using index
@@ -51,23 +62,26 @@ class Matrix {
    * @param[in] y index
    * @param[out] value of the element
    */
-  T operator()(int i, int j) const;// { return _container.at(_imax * j + i); }
+  double operator()(int i, int j) const;
+
+  double operator()(DEV, int i, int j) const;
 
   void printField() {
-    for(int j = 0; j < _jmax; j++) {
-      for(int i = 0; i < _imax; i++) {
-        std::cout << this->operator()(i,j) << " ";
+    for (int j = 0; j < _jmax; j++) {
+      for (int i = 0; i < _imax; i++) {
+        std::cout << this->operator()(i, j) << " ";
       }
       std::cout << "\n";
     }
   }
 
   void copyToDevice();
+  void copyToDevice() const;
 
-  thrust::host_vector<T> h_container;
-  thrust::device_vector<T> d_container;
+  thrust::host_vector<double> h_container;
+  thrust::device_vector<double> d_container;
 
- private:
+private:
   // Number of elements in x direction
   int _imax;
 
@@ -75,7 +89,7 @@ class Matrix {
   int _jmax;
 
   // Data container
-  std::vector<T> _container;
+  std::vector<double> _container;
 };
 
 // template class Matrix<float>;

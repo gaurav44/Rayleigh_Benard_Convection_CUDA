@@ -27,15 +27,15 @@ set(CMAKE_CUDA_EXTENSIONS OFF)
 set(SOURCES_CPP
     src/main.cpp
     #    src/DataStructure.cpp
-    # src/Simulation.cpp
-    # src/Discretization.cpp
+    src/Simulation.cpp
+    #    src/Discretization.cpp
     # src/PressureSolver.cpp
 
 )
 
 set(SOURCES_CU
     src/DataStructure.cu
-    src/Simulation.cu
+    src/SimulationKernels.cu
     src/Discretization.cu
     src/PressureSolver.cu
 )
