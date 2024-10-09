@@ -55,7 +55,7 @@ int main() {
     // Time loop
     while (t<t_end) {
         Simulation::calculate_dt(domain, fields);
-        fields.U.copyToDevice();
+//        fields.U.copyToDevice();
         Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
     //     // fields.T.printField();
         Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F, fields.G, domain);
