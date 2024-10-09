@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include <vector>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-#include <thrust/copy.h>
+//#include <thrust/host_vector.h>
+//#include <thrust/device_vector.h>
+//#include <thrust/copy.h>
 
 /**
  * @brief General 2D data structure around std::vector, in column
@@ -81,8 +81,8 @@ class Matrix {
   // }
   void copyToDevice();
 
-  thrust::host_vector<T> h_container;
-  thrust::device_vector<T> d_container;
+//  thrust::host_vector<T> h_container;
+//  thrust::device_vector<T> d_container;
 
  private:
   /// Number of elements in x direction

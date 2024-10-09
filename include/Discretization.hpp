@@ -53,7 +53,7 @@ class Discretization {
         // }
 
         // Calculating the value of convective part of T
-        static constexpr double convection_T(const Matrix<double> &U,
+        static  double convection_T(const Matrix<double> &U,
                                    const Matrix<double> &V,
                                    const Matrix<double> &T,
                                    const Domain& domain,
@@ -75,7 +75,7 @@ class Discretization {
         // };
 
         // Using the same for calculating diffusive part of U and V
-        static constexpr double diffusion(const Matrix<double> &A,
+        static  double diffusion(const Matrix<double> &A,
                                 const Domain& domain,
                                 int i, int j);
         // {
