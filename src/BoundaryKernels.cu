@@ -5,7 +5,7 @@ __global__ void BoundaryLR_kernel_call(double *U, double *V, double *F,
                                        int jmax) {
   int j = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (j > 0 && j < jmax) {
+  if (j < jmax) {
     int idxLeft0 = imax * j + 0;
     int idxLeft1 = imax * j + 1;
 
@@ -31,7 +31,7 @@ __global__ void BoundaryTB_kernel_call(double *U, double *V, double *F,
                                        double Th, double Tc) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (i > 0 && i < imax) {
+  if (i < imax) {
     int idxBottom0 = imax * 0 + i;
     int idxBottom1 = imax * 1 + i;
 

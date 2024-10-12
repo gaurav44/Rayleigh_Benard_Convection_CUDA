@@ -19,17 +19,19 @@ __global__ void temperature_kernel_call(const double *U, const double *V,
   }
 }
 
-void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
-                        const Matrix &T_old, const Domain &domain) {
+void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T, const Domain &domain) {
 
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
+  thrust::device_vector<double> T_old(T.d_container.size());
+  thrust::copy(T.d_container.begin(), T.d_container.end(), T_old.begin());
+
   const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
   const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
   double *d_T = thrust::raw_pointer_cast(T.d_container.data());
-  const double *dT_old = thrust::raw_pointer_cast(T_old.d_container.data());
+  const double *dT_old = thrust::raw_pointer_cast(T_old.data());
 
   temperature_kernel_call<<<numBlocks, threadsPerBlock>>>(
       d_U, d_V, d_T, dT_old, domain.dx, domain.dy, domain.imax + 2,

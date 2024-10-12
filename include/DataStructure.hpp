@@ -2,11 +2,13 @@
 
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <thrust/copy.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <vector>
+#include <iomanip>
 
 /**
  * @brief General 2D data structure around std::vector, in column
@@ -39,10 +41,12 @@ public:
   Matrix(int i_max, int j_max);
 
   // Copy constructor
-  Matrix(const Matrix &other)
-      : _imax(other._imax), _jmax(other._jmax), _container(other._container)
-        /*h_container(other.h_container)*/,
-        d_container(other._container) {}
+  Matrix(const Matrix &other);
+  //     : _imax(other._imax), _jmax(other._jmax), _container(other._container)
+  //       /*h_container(other.h_container)*/,
+  //       d_container(other._container) {
+  //         std::cout << "Copy constructor called\n";
+  // }
 
   Matrix &operator=(const Matrix &other);
 
@@ -68,13 +72,15 @@ public:
 
   double operator()(DEV, int i, int j) const;
 
-  void printField() {
-    std::ofstream tmp("tmpCPU.txt");
-    for (int j = 0; j < _jmax; j++) {
-      for (int i = 0; i < _imax; i++) {
-        tmp << i << " " << j << " " << this->operator()(i, j) << "\n";
+  void printField(int timestep) {
+    //this->copyToHost();
+    std::string fileName = "T" + std::to_string(timestep) + ".txt";
+    std::ofstream tmp(fileName);
+    for (int j = 1; j < _jmax-1; j++) {
+      for (int i = 1; i < _imax-1; i++) {
+        tmp << std::setprecision(8) << this->operator()(i, j) << ",";
       }
-      //std::cout << "\n";
+      tmp << "\n";
     }
   }
 

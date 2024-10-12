@@ -25,7 +25,7 @@ void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
 
   U_kernel_call<<<numBlocks, threadsPerBlock>>>(
       d_U, d_F, d_P, domain.dx, domain.imax + 2, domain.jmax + 2, domain.dt);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 }
 
 __global__ void V_kernel_call(double *V, const double *G, const double *P,
@@ -52,5 +52,5 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
 
   V_kernel_call<<<numBlocks, threadsPerBlock>>>(
       d_V, d_G, d_P, domain.dy, domain.imax + 2, domain.jmax + 2, domain.dt);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 }

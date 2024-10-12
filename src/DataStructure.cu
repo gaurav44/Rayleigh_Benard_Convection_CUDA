@@ -21,6 +21,16 @@ Matrix::Matrix(int i_max, int j_max) : _imax(i_max), _jmax(j_max) {
   d_container.resize(i_max * j_max);
 }
 
+Matrix::Matrix(const Matrix &other) : _imax(other._imax), _jmax(other._jmax)
+        /*h_container(other.h_container)*/
+{
+    _container.resize(_imax*_jmax);
+    d_container.resize(_imax*_jmax);
+    std::copy(other._container.begin(), other._container.end(),_container.begin());
+    thrust::copy(other._container.begin(), other._container.end(), d_container.begin());
+    // std::cout << "Copy constructor called\n";
+}
+
 // template<typename T>
 double &Matrix::operator()(int i, int j) { return _container[_imax * j + i]; }
 
@@ -45,7 +55,7 @@ Matrix &Matrix::operator=(const Matrix &other) {
     
     _container.resize(_imax*_jmax);
     d_container.resize(_imax*_jmax);
-
+    std::cout << "copy assignment called\n";
 //    h_container = other.h_container;
     thrust::copy(other._container.begin(), other._container.end(), d_container.begin());
     _container = other._container;
@@ -59,6 +69,7 @@ void Matrix::copyToDevice() {
 }
 
 void Matrix::copyToHost() {
+  cudaDeviceSynchronize();
   thrust::copy(d_container.begin(), d_container.end(), _container.begin());
 }
 

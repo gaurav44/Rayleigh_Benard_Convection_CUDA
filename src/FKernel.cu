@@ -34,5 +34,5 @@ void F_kernel(const Matrix &U, const Matrix &V, const Matrix &T, Matrix &F,
       d_U, d_V, d_T, d_F, domain.dx, domain.dy, domain.imax + 2,
       domain.jmax + 2, domain.nu, domain.dt, domain.GX, domain.beta,
       domain.gamma);
-  cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 }
