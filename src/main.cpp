@@ -58,34 +58,34 @@ int main() {
   while (t < t_end) {
     //    std::cout << "hello before calculate dt\n";
     Simulation::calculate_dt(domain, fields);
-    //fields.U.copyToDevice();
-    //fields.V.copyToDevice();
-    //fields.T.copyToDevice();
+    fields.U.copyToDevice();
+    fields.V.copyToDevice();
+    fields.T.copyToDevice();
     Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
-    //fields.T.copyToHost();
+    fields.T.copyToHost();
 
     // fields.T.printField();
     // std::cout << "write to file done\n";
-    //fields.F.copyToDevice();
-    //fields.G.copyToDevice();
-    //fields.T.copyToDevice();
-    //fields.U.copyToDevice();
-    //fields.V.copyToDevice();
+    fields.F.copyToDevice();
+    fields.G.copyToDevice();
+    fields.T.copyToDevice();
+    fields.U.copyToDevice();
+    fields.V.copyToDevice();
     Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F,
                                  fields.G, domain);
-    //fields.F.copyToHost();
-    //fields.G.copyToHost();
+    fields.F.copyToHost();
+    fields.G.copyToHost();
     // std::cout << "\n";
     // fields.G.printField();
     // std::cout << "write to file done\n";
     // sleep(2000);
     // std::cout << "\n";
-    //fields.G.printField();
-    //fields.F.copyToDevice();
-    //fields.G.copyToDevice();
-    //fields.RS.copyToDevice();
+    fields.G.printField();
+    fields.F.copyToDevice();
+    fields.G.copyToDevice();
+    fields.RS.copyToDevice();
     Simulation::calculate_rs(fields.F, fields.G, fields.RS, domain);
-    //fields.RS.copyToHost();
+    fields.RS.copyToHost();
     // fields.RS.printField();
     //  std::cout << "write to file done\n";
     //    sleep(2000);
@@ -106,17 +106,23 @@ int main() {
       Boundary::apply_pressure(fields.P, domain);
       // std::cout << "\n";
       // fields.P.printField();
-      //fields.P.copyToDevice();
-      //fields.RS.copyToDevice();
+      fields.P.copyToDevice();
+      fields.RS.copyToDevice();
       res =
           PressureSolver::calculate_pressure(fields.P, fields.RS, domain, omg);
-      //fields.P.copyToHost();
-      //fields.RS.copyToHost();
+      fields.P.copyToHost();
+      // fields.RS.copyToHost();
       iter++;
     }
-
+    fields.U.copyToDevice();
+    fields.V.copyToDevice();
+    fields.P.copyToDevice();
+    fields.F.copyToDevice();
+    fields.G.copyToDevice();
     Simulation::calculate_velocities(fields.U, fields.V, fields.F, fields.G,
                                      fields.P, domain);
+    fields.U.copyToHost();
+    fields.V.copyToHost();
     Boundary::apply_boundaries(fields, domain, Th, Tc);
 
     if (timestep % 500 == 0)

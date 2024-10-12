@@ -44,6 +44,7 @@ set(SOURCES_CU
     src/Discretization.cu
     src/PressureSolver.cu
     src/PressureSolverKernel.cu
+    src/VelocityKernels.cu
 )
 
 add_executable(main ${SOURCES_CPP} ${SOURCES_CU})

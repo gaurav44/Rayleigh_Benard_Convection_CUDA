@@ -180,6 +180,21 @@ double Discretization::laplacian(const Matrix &P, const Domain &domain, int i,
   return result;
 }
 
+__device__ double Discretization::laplacian(const double *P, double dx,
+                                            double dy, int i, int j, int imax) {
+  int idx = imax * j + i;
+  int idx_right = imax * j + i + 1;
+  int idx_left = imax * j + i - 1;
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
+
+  double result =
+      (P[idx_right] - 2.0 * P[idx] + P[idx_left]) / (dx * dx) +
+      (P[idx_top] - 2.0 * P[idx] + P[idx_bottom]) / (dy * dy);
+
+  return result;
+}
+
 double Discretization::sor_helper(const Matrix &P, const Domain &domain, int i,
                                   int j) {
   double result = (P(i + 1, j) + P(i - 1, j)) / (domain.dx * domain.dx) +
@@ -189,8 +204,9 @@ double Discretization::sor_helper(const Matrix &P, const Domain &domain, int i,
 }
 
 __device__ double Discretization::sor_helper(const double *P, double dx,
-                                             double dy, int i, int j, int imax) {
-  //int idx = imax * j + i;
+                                             double dy, int i, int j,
+                                             int imax) {
+  // int idx = imax * j + i;
   int idx_right = imax * j + i + 1;
   int idx_left = imax * j + i - 1;
   int idx_top = imax * (j + 1) + i;

@@ -36,6 +36,7 @@ public:
 
   // Calculating the laplacian part of the equation
   static double laplacian(const Matrix &P, const Domain &domain, int i, int j);
+  __device__ static double laplacian(const double* P, double dx, double dy, int i, int j, int imax);
 
   // Calculating the SOR Helper
   static double sor_helper(const Matrix &P, const Domain &domain, int i, int j);

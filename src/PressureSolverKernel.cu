@@ -16,7 +16,21 @@ __global__ void SOR_kernel_call(double *P, const double *RS, double dx,
   }
 }
 
-double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain, double omg) {
+__global__ void Residual_kernel_call(const double *P, const double *RS,
+                                     double dx, double dy, int imax,
+                                     double jmax, double *residual) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+    int idx = imax * j + i;
+    double val = Discretization::laplacian(P, dx, dy, i, j, imax) - RS[idx];
+    atomicAdd(residual, (val * val));
+  }
+}
+
+double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain,
+                             double omg) {
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
@@ -33,19 +47,28 @@ double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain, 
                                                   domain.dy, domain.imax + 2,
                                                   domain.jmax + 2, omg, 1);
   cudaDeviceSynchronize();
-  
-  P.copyToHost();
-  double res = 0.0;
-  double rloc = 0.0;
 
+  // P.copyToHost();
+
+  double res = 0.0;
+  double *d_rloc;
+  double h_rloc = 0.0;
+  cudaMalloc(&d_rloc, sizeof(double));
+  cudaMemcpy(d_rloc, &h_rloc, sizeof(double), cudaMemcpyHostToDevice);
+
+  Residual_kernel_call<<<numBlocks, threadsPerBlock>>>(
+      d_P, d_RS, domain.dx, domain.dy, domain.imax + 2, domain.jmax + 2, d_rloc);
+
+  cudaDeviceSynchronize();
   // Using squared value of difference to calculate residual
-  for (int i = 1; i < domain.imax + 1; i++) {
-    for (int j = 1; j < domain.jmax + 1; j++) {
-      double val = Discretization::laplacian(P, domain, i, j) - RS(i, j);
-      rloc += (val * val);
-    }
-  }
-  res = rloc / (domain.imax * domain.jmax);
+  // for (int i = 1; i < domain.imax + 1; i++) {
+  //  for (int j = 1; j < domain.jmax + 1; j++) {
+  //    double val = Discretization::laplacian(P, domain, i, j) - RS(i, j);
+  //    rloc += (val * val);
+  //  }
+  //}
+  cudaMemcpy(&h_rloc, d_rloc, sizeof(double), cudaMemcpyDeviceToHost);
+  res = h_rloc / (domain.imax * domain.jmax);
   res = std::sqrt(res);
   return res;
 }
