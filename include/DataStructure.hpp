@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <thrust/copy.h>
 #include <thrust/device_reference.h>
@@ -39,8 +40,9 @@ public:
 
   // Copy constructor
   Matrix(const Matrix &other)
-      : _imax(other._imax), _jmax(other._jmax), _container(other._container),
-        h_container(other.h_container), d_container(other.h_container) {}
+      : _imax(other._imax), _jmax(other._jmax), _container(other._container)
+        /*h_container(other.h_container)*/,
+        d_container(other._container) {}
 
   Matrix &operator=(const Matrix &other);
 
@@ -67,18 +69,21 @@ public:
   double operator()(DEV, int i, int j) const;
 
   void printField() {
+    std::ofstream tmp("tmpCPU.txt");
     for (int j = 0; j < _jmax; j++) {
       for (int i = 0; i < _imax; i++) {
-        std::cout << this->operator()(i, j) << " ";
+        tmp << i << " " << j << " " << this->operator()(i, j) << "\n";
       }
-      std::cout << "\n";
+      //std::cout << "\n";
     }
   }
 
   void copyToDevice();
   void copyToDevice() const;
 
-  thrust::host_vector<double> h_container;
+  void copyToHost();
+
+  //  thrust::host_vector<double> h_container;
   thrust::device_vector<double> d_container;
 
 private:

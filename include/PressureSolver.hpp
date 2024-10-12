@@ -11,3 +11,4 @@ class PressureSolver {
                                          const Domain& domain,
                                          double omg );
 };
+extern double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain, double omg);

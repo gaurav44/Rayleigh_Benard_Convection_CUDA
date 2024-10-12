@@ -21,6 +21,37 @@ double Discretization::convection_u(const Matrix &U, const Matrix &V,
   return term1 + term2;
 }
 
+__device__ double Discretization::convection_u(const double *U, const double *V,
+                                               double dx, double dy, int i,
+                                               int j, double gamma, int imax) {
+
+  int idx = imax * j + i;
+  int idx_right = imax * j + (i + 1);
+  int idx_left = imax * j + (i - 1);
+
+  double term1 = (1 / dx) * (interpolate(U, i, j, 1, 0, imax) *
+                                 interpolate(U, i, j, 1, 0, imax) -
+                             interpolate(U, i, j, -1, 0, imax) *
+                                 interpolate(U, i, j, -1, 0, imax)) +
+                 (gamma / dx) * (fabs(interpolate(U, i, j, 1, 0, imax)) *
+                                     (U[idx] - U[idx_right]) / 2 -
+                                 fabs(interpolate(U, i, j, -1, 0, imax)) *
+                                     (U[idx_left] - U[idx]) / 2);
+
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
+  double term2 =
+      (1 / dy) *
+          (interpolate(V, i, j, 1, 0, imax) * interpolate(U, i, j, 0, 1, imax) -
+           interpolate(V, i, j - 1, 1, 0, imax) *
+               interpolate(U, i, j, 0, -1, imax)) +
+      (gamma / dy) *
+          (fabs(interpolate(V, i, j, 1, 0, imax)) * (U[idx] - U[idx_top]) / 2 -
+           fabs(interpolate(V, i, j - 1, 1, 0, imax)) *
+               (U[idx_bottom] - U[idx]) / 2);
+  return term1 + term2;
+}
+
 double Discretization::convection_v(const Matrix &U, const Matrix &V,
                                     const Domain &domain, int i, int j) {
   double term1 =
@@ -38,6 +69,37 @@ double Discretization::convection_v(const Matrix &U, const Matrix &V,
       (domain.gamma / domain.dx) *
           (fabs(interpolate(U, i, j, 0, 1)) * (V(i, j) - V(i + 1, j)) / 2 -
            fabs(interpolate(U, i - 1, j, 0, 1)) * (V(i - 1, j) - V(i, j)) / 2);
+
+  return term1 + term2;
+}
+
+__device__ double Discretization::convection_v(const double *U, const double *V,
+                                               double dx, double dy, int i,
+                                               int j, double gamma, int imax) {
+  int idx = imax * j + i;
+  int idx_right = imax * j + (i + 1);
+  int idx_left = imax * j + (i - 1);
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
+
+  double term1 =
+      (1 / dy) *
+          (interpolate(V, i, j, 0, 1, imax) * interpolate(V, i, j, 0, 1, imax) -
+           interpolate(V, i, j, 0, -1, imax) *
+               interpolate(V, i, j, 0, -1, imax)) +
+      (gamma / dy) *
+          (fabs(interpolate(V, i, j, 0, 1, imax)) * (V[idx] - V[idx_top]) / 2 -
+           fabs(interpolate(V, i, j, 0, -1, imax)) * (V[idx_bottom] - V[idx]) /
+               2);
+
+  double term2 = (1 / dx) * (interpolate(U, i, j, 0, 1, imax) *
+                                 interpolate(V, i, j, 1, 0, imax) -
+                             interpolate(U, i - 1, j, 0, 1, imax) *
+                                 interpolate(V, i, j, -1, 0, imax)) +
+                 (gamma / dx) * (fabs(interpolate(U, i, j, 0, 1, imax)) *
+                                     (V[idx] - V[idx_right]) / 2 -
+                                 fabs(interpolate(U, i - 1, j, 0, 1, imax)) *
+                                     (V[idx_left] - V[idx]) / 2);
 
   return term1 + term2;
 }
@@ -62,21 +124,21 @@ double Discretization::convection_T(const Matrix &U, const Matrix &V,
   return term1 + term2;
 };
 
-__device__ double Discretization::convection_T(double *U, double *V,
-                                               double *T, double gamma,
+__device__ double Discretization::convection_T(const double *U, const double *V,
+                                               const double *T, double gamma,
                                                double dx, double dy, int i,
                                                int j, int imax) {
-  int idx = imax * i + j;
-  int idx_right = imax * (i + 1) + j;
-  int idx_left = imax * (i - 1) + j;
+  int idx = imax * j + i;
+  int idx_right = imax * j + (i + 1);
+  int idx_left = imax * j + (i - 1);
   double term1 =
       (1 / (2 * dx)) * (U[idx] * (T[idx] + T[idx_right]) -
                         U[idx_left] * (T[idx_left] + T[idx])) +
       (gamma / (2 * dx)) * (fabs(U[idx]) * (T[idx] - T[idx_right]) -
                             fabs(U[idx_left]) * (T[idx_left] - T[idx]));
 
-  int idx_top = imax * i + j + 1;
-  int idx_bottom = imax * i + j - 1;
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
   double term2 =
       (1 / (2 * dy)) * (V[idx] * (T[idx] + T[idx_top]) -
                         V[idx_bottom] * (T[idx_bottom] + T[idx])) +
@@ -95,15 +157,15 @@ double Discretization::diffusion(const Matrix &A, const Domain &domain, int i,
   return term1 + term2;
 }
 
-__device__ double Discretization::diffusion(double *A, double dx, double dy, int i,
-                                 int j, int imax) {
-  int idx = imax * i + j;
-  int idx_right = imax * (i + 1) + j;
-  int idx_left = imax * (i - 1) + j;
+__device__ double Discretization::diffusion(const double *A, double dx,
+                                            double dy, int i, int j, int imax) {
+  int idx = imax * j + i;
+  int idx_right = imax * j + i + 1;
+  int idx_left = imax * j + i - 1;
   double term1 = (A[idx_right] - 2 * A[idx] + A[idx_left]) / (dx * dx);
 
-  int idx_top = imax * i + j + 1;
-  int idx_bottom = imax * i + j - 1;
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
 
   double term2 = (A[idx_top] - 2 * A[idx] + A[idx_bottom]) / (dy * dy);
   return term1 + term2;
@@ -126,7 +188,30 @@ double Discretization::sor_helper(const Matrix &P, const Domain &domain, int i,
   return result;
 }
 
+__device__ double Discretization::sor_helper(const double *P, double dx,
+                                             double dy, int i, int j, int imax) {
+  //int idx = imax * j + i;
+  int idx_right = imax * j + i + 1;
+  int idx_left = imax * j + i - 1;
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
+
+  double result = (P[idx_right] + P[idx_left]) / (dx * dx) +
+                  (P[idx_top] + P[idx_bottom]) / (dy * dy);
+
+  return result;
+}
+
 double Discretization::interpolate(const Matrix &A, int i, int j, int i_offset,
                                    int j_offset) {
   return (A(i, j) + A(i + i_offset, j + j_offset)) / 2;
+}
+
+__device__ double Discretization::interpolate(const double *A, int i, int j,
+                                              int i_offset, int j_offset,
+                                              int imax) {
+  int idx = imax * j + i;
+  int idxOffset = imax * (j + j_offset) + i + i_offset;
+
+  return 0.5 * (A[idx] + A[idxOffset]);
 }

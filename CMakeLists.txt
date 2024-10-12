@@ -28,6 +28,7 @@ set(SOURCES_CPP
     src/main.cpp
     #    src/DataStructure.cpp
     src/Simulation.cpp
+    src/Boundary.cpp
     #    src/Discretization.cpp
     # src/PressureSolver.cpp
 
@@ -35,9 +36,14 @@ set(SOURCES_CPP
 
 set(SOURCES_CU
     src/DataStructure.cu
-    src/SimulationKernels.cu
+    src/TemperatureKernel.cu
+    src/FKernel.cu
+    src/GKernel.cu
+    src/RSKernel.cu
+    src/BoundaryKernels.cu
     src/Discretization.cu
     src/PressureSolver.cu
+    src/PressureSolverKernel.cu
 )
 
 add_executable(main ${SOURCES_CPP} ${SOURCES_CU})

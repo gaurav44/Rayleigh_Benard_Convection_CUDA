@@ -1,0 +1,38 @@
+#include "Simulation.hpp"
+#include <thrust/device_vector.h>
+
+__global__ void temperature_kernel_call(const double *U, const double *V,
+                                        double *T, const double *T_old,
+                                        double dx, double dy, int imax,
+                                        double jmax, double gamma, double alpha,
+                                        double dt) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+    int idx = j * imax + i;
+    T[idx] =
+        T_old[idx] +
+        dt * (alpha * Discretization::diffusion(T_old, dx, dy, i, j, imax) -
+              Discretization::convection_T(U, V, T_old, gamma, dx, dy, i, j,
+                                           imax));
+  }
+}
+
+void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
+                        const Matrix &T_old, const Domain &domain) {
+
+  dim3 threadsPerBlock(16, 16);
+  dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                 (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+  const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
+  const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
+  double *d_T = thrust::raw_pointer_cast(T.d_container.data());
+  const double *dT_old = thrust::raw_pointer_cast(T_old.d_container.data());
+
+  temperature_kernel_call<<<numBlocks, threadsPerBlock>>>(
+      d_U, d_V, d_T, dT_old, domain.dx, domain.dy, domain.imax + 2,
+      domain.jmax + 2, domain.gamma, domain.alpha, domain.dt);
+  cudaDeviceSynchronize();
+}

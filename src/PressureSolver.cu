@@ -3,6 +3,7 @@
 double PressureSolver::calculate_pressure(Matrix &P,
                                           const Matrix &RS,
                                           const Domain &domain, double omg) {
+  //double res = PressureSolver_kernel(P, RS, domain, omg);
   double dx = domain.dx;
   double dy = domain.dy;
   double coeff =

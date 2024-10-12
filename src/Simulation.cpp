@@ -47,21 +47,15 @@ void Simulation::calculate_dt(Domain &domain, const Fields &fields) {
   domain.dt = domain.tau * domain.dt;
 }
 
-void Simulation::calculate_temperature(Matrix &U,
-                                       Matrix &V,
-                                       Matrix &T,
-                                       const Domain &domain) {
-   
-  U.copyToDevice();
-  V.copyToDevice();
-  T.copyToDevice();
+void Simulation::calculate_temperature(const Matrix &U, const Matrix &V,
+                                       Matrix &T, const Domain &domain) {
 
   Matrix T_old = T;
-  T_old.copyToDevice();
+  //  T_old.copyToDevice();
 
-  temperature_kernel(U, V, T, T_old, domain);
-  //    T.d_container, U.d_container, V.d_container, domain.alpha, domain.dt,
-  //    domain.imax, domain.jmax);
+  // temperature_kernel(U, V, T, T_old, domain);
+  //      T.d_container, U.d_container, V.d_container, domain.alpha, domain.dt,
+  //      domain.imax, domain.jmax);
 
   for (int i = 1; i < domain.imax + 1; i++) {
     for (int j = 1; j < domain.jmax + 1; j++) {
@@ -74,33 +68,41 @@ void Simulation::calculate_temperature(Matrix &U,
   }
 }
 
-void Simulation::calculate_fluxes(const Matrix &U,
-                                  const Matrix &V,
-                                  const Matrix &T, Matrix &F,
-                                  Matrix &G, const Domain &domain) {
-  for (int i = 1; i < domain.imax; i++) {
-    for (int j = 1; j < domain.jmax + 1; j++) {
-      F(i, j) =
-          U(i, j) +
-          domain.dt * (domain.nu * Discretization::diffusion(U, domain, i, j) -
-                       Discretization::convection_u(U, V, domain, i, j)) -
-          (domain.beta * domain.dt / 2 * (T(i, j) + T(i + 1, j))) * domain.GX;
-    }
-  }
+void Simulation::calculate_fluxes(const Matrix &U, const Matrix &V,
+                                  const Matrix &T, Matrix &F, Matrix &G,
+                                  const Domain &domain) {
+  //F_kernel(U, V, T, F, domain);
+  //G_kernel(U, V, T, G, domain);
 
-  for (int i = 1; i < domain.imax + 1; i++) {
-    for (int j = 1; j < domain.jmax; j++) {
-      G(i, j) =
-          V(i, j) +
-          domain.dt * (domain.nu * Discretization::diffusion(V, domain, i, j) -
-                       Discretization::convection_v(U, V, domain, i, j)) -
-          (domain.beta * domain.dt / 2 * (T(i, j) + T(i, j + 1))) * domain.GY;
-    }
-  }
+   for (int i = 1; i < domain.imax; i++) {
+     for (int j = 1; j < domain.jmax + 1; j++) {
+       F(i, j) =
+           U(i, j) +
+           domain.dt * (domain.nu * Discretization::diffusion(U, domain, i, j)
+           -
+                        Discretization::convection_u(U, V, domain, i, j)) -
+           (domain.beta * domain.dt / 2 * (T(i, j) + T(i + 1, j))) *
+           domain.GX;
+     }
+   }
+
+  // for (int i = 1; i < domain.imax + 1; i++) {
+  //   for (int j = 1; j < domain.jmax; j++) {
+  //     G(i, j) =
+  //         V(i, j) +
+  //         domain.dt * (domain.nu * Discretization::diffusion(V, domain, i, j)
+  //         -
+  //                      Discretization::convection_v(U, V, domain, i, j)) -
+  //         (domain.beta * domain.dt / 2 * (T(i, j) + T(i, j + 1))) *
+  //         domain.GY;
+  //   }
+  // }
 }
 
-void Simulation::calculate_rs(const Matrix &F, const Matrix &G,
-                              Matrix &RS, const Domain &domain) {
+void Simulation::calculate_rs(const Matrix &F, const Matrix &G, Matrix &RS,
+                              const Domain &domain) {
+  // RS_kernel(F, G, RS, domain);
+
   for (int i = 1; i < domain.imax + 1; i++) {
     for (int j = 1; j < domain.jmax + 1; j++) {
       double term1 = (F(i, j) - F(i - 1, j)) / domain.dx;
@@ -110,10 +112,8 @@ void Simulation::calculate_rs(const Matrix &F, const Matrix &G,
   }
 }
 
-void Simulation::calculate_velocities(Matrix &U, Matrix &V,
-                                      const Matrix &F,
-                                      const Matrix &G,
-                                      const Matrix &P,
+void Simulation::calculate_velocities(Matrix &U, Matrix &V, const Matrix &F,
+                                      const Matrix &G, const Matrix &P,
                                       const Domain &domain) {
   for (int i = 1; i < domain.imax; i++) {
     for (int j = 1; j < domain.jmax + 1; j++) {
