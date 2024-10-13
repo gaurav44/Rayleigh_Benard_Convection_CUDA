@@ -144,7 +144,7 @@ __device__ double Discretization::convection_T(const double *U, const double *V,
                         V[idx_bottom] * (T[idx_bottom] + T[idx])) +
       (gamma / (2 * dy)) * (fabs(V[idx]) * (T[idx] - T[idx_top]) -
                             fabs(V[idx_bottom]) * (T[idx_bottom] - T[idx]));
-  return 0.0;
+  return term1 + term2;
 }
 
 double Discretization::diffusion(const Matrix &A, const Domain &domain, int i,

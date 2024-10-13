@@ -67,31 +67,31 @@ int main() {
     Simulation::calculate_dt(domain, fields);
     
     Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
-    
+
     Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F,
                                  fields.G, domain);
-                                 
+
     Simulation::calculate_rs(fields.F, fields.G, fields.RS, domain);
-  
+
     int iter = 0;
     double res = 10;
 
     while (res > eps) {
       if (iter >= itermax) {
         std::cout << "Pressure solver not converged\n";
-        std::cout << "dt: " << domain.dt << "Time: "
-                  << " residual:" << res << " iterations: " << iter << "\n";
+        std::cout << "dt: " << domain.dt << "Time: " << " residual:" << res
+                  << " iterations: " << iter << "\n";
         break;
       }
       Boundary::apply_pressure(fields.P, domain);
-    
+
       res =
           PressureSolver::calculate_pressure(fields.P, fields.RS, domain, omg);
       iter++;
     }
     Simulation::calculate_velocities(fields.U, fields.V, fields.F, fields.G,
                                      fields.P, domain);
-  
+
     Boundary::apply_boundaries(fields, domain, Th, Tc);
 
     if (timestep % 1000 == 0) {

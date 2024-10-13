@@ -25,14 +25,12 @@ void F_kernel(const Matrix &U, const Matrix &V, const Matrix &T, Matrix &F,
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
-  const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
-  const double *d_T = thrust::raw_pointer_cast(T.d_container.data());
-  double *d_F = thrust::raw_pointer_cast(F.d_container.data());
-
   F_kernel_call<<<numBlocks, threadsPerBlock>>>(
-      d_U, d_V, d_T, d_F, domain.dx, domain.dy, domain.imax + 2,
-      domain.jmax + 2, domain.nu, domain.dt, domain.GX, domain.beta,
-      domain.gamma);
+      thrust::raw_pointer_cast(U.d_container.data()),
+      thrust::raw_pointer_cast(V.d_container.data()),
+      thrust::raw_pointer_cast(T.d_container.data()),
+      thrust::raw_pointer_cast(F.d_container.data()), domain.dx, domain.dy,
+      domain.imax + 2, domain.jmax + 2, domain.nu, domain.dt, domain.GX,
+      domain.beta, domain.gamma);
   // cudaDeviceSynchronize();
 }

@@ -28,13 +28,16 @@ void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T, const Domai
   thrust::device_vector<double> T_old(T.d_container.size());
   thrust::copy(T.d_container.begin(), T.d_container.end(), T_old.begin());
 
-  const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
-  const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
-  double *d_T = thrust::raw_pointer_cast(T.d_container.data());
-  const double *dT_old = thrust::raw_pointer_cast(T_old.data());
+  //const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
+  //const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
+  //double *d_T = thrust::raw_pointer_cast(T.d_container.data());
+  //const double *dT_old = thrust::raw_pointer_cast(T_old.data());
 
   temperature_kernel_call<<<numBlocks, threadsPerBlock>>>(
-      d_U, d_V, d_T, dT_old, domain.dx, domain.dy, domain.imax + 2,
+      thrust::raw_pointer_cast(U.d_container.data()),
+      thrust::raw_pointer_cast(V.d_container.data()),
+      thrust::raw_pointer_cast(T.d_container.data()),
+      thrust::raw_pointer_cast(T_old.data()), domain.dx, domain.dy, domain.imax + 2,
       domain.jmax + 2, domain.gamma, domain.alpha, domain.dt);
-  cudaDeviceSynchronize();
+  //cudaDeviceSynchronize();
 }

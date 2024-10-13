@@ -41,14 +41,10 @@ double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain,
   SOR_kernel_call<<<numBlocks, threadsPerBlock>>>(d_P, d_RS, domain.dx,
                                                   domain.dy, domain.imax + 2,
                                                   domain.jmax + 2, omg, 0);
-  // cudaDeviceSynchronize();
 
   SOR_kernel_call<<<numBlocks, threadsPerBlock>>>(d_P, d_RS, domain.dx,
                                                   domain.dy, domain.imax + 2,
                                                   domain.jmax + 2, omg, 1);
-  // cudaDeviceSynchronize();
-
-  // P.copyToHost();
 
   double res = 0.0;
   double *d_rloc;
@@ -60,15 +56,9 @@ double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain,
       d_P, d_RS, domain.dx, domain.dy, domain.imax + 2, domain.jmax + 2, d_rloc);
 
   // cudaDeviceSynchronize();
-  // Using squared value of difference to calculate residual
-  // for (int i = 1; i < domain.imax + 1; i++) {
-  //  for (int j = 1; j < domain.jmax + 1; j++) {
-  //    double val = Discretization::laplacian(P, domain, i, j) - RS(i, j);
-  //    rloc += (val * val);
-  //  }
-  //}
   cudaMemcpy(&h_rloc, d_rloc, sizeof(double), cudaMemcpyDeviceToHost);
   res = h_rloc / (domain.imax * domain.jmax);
   res = std::sqrt(res);
+  cudaFree(d_rloc);
   return res;
 }

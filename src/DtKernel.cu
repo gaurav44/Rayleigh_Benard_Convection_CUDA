@@ -77,9 +77,6 @@ std::pair<double, double> Dt_kernel(const Matrix &U, const Matrix &V,
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
-  const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
-
   double h_u_max = 0.0;
   double h_v_max = 0.0;
 
@@ -98,18 +95,22 @@ std::pair<double, double> Dt_kernel(const Matrix &U, const Matrix &V,
   // cudaMalloc(&d_v_block_results, 256 * sizeof(double));
 
   Max_kernel_call<<<numBlocks, threadsPerBlock, 256 * sizeof(double)>>>(
-      d_U, d_V, domain.imax + 2, domain.jmax + 2, d_u_max, d_v_max);
+      thrust::raw_pointer_cast(U.d_container.data()),
+      thrust::raw_pointer_cast(V.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, d_u_max, d_v_max);
   // VMax_kernel_call<<<numBlocks, threadsPerBlock, 256 * sizeof(double)>>>(
   //     d_V, domain.imax + 2, domain.jmax + 2, d_v_block_results);
   // cudaDeviceSynchronize();
   cudaMemcpy(&h_u_max, d_u_max, sizeof(double), cudaMemcpyDeviceToHost);
   cudaMemcpy(&h_v_max, d_v_max, sizeof(double), cudaMemcpyDeviceToHost);
-  //double *h_umax_results = new double[256];
-  //double *h_vmax_results = new double[256];
-  //cudaMemcpy(h_umax_results, d_u_block_results, 256 * sizeof(double),
-  //           cudaMemcpyDeviceToHost);
-  //cudaMemcpy(h_vmax_results, d_v_block_results, 256 * sizeof(double),
-  //           cudaMemcpyDeviceToHost);
+  cudaFree(d_u_max);
+  cudaFree(d_v_max);
+  // double *h_umax_results = new double[256];
+  // double *h_vmax_results = new double[256];
+  // cudaMemcpy(h_umax_results, d_u_block_results, 256 * sizeof(double),
+  //            cudaMemcpyDeviceToHost);
+  // cudaMemcpy(h_vmax_results, d_v_block_results, 256 * sizeof(double),
+  //            cudaMemcpyDeviceToHost);
 
   // Find the maximum in the result array
   // for (int i = 0; i < 256; ++i) {

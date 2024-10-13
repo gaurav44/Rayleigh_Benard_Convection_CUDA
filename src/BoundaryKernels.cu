@@ -57,17 +57,21 @@ void Boundary_kernel(Fields &fields, const Domain &domain, double Th,
   dim3 threadsPerBlock(256);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
-  double *d_U = thrust::raw_pointer_cast(fields.U.d_container.data());
-  double *d_V = thrust::raw_pointer_cast(fields.V.d_container.data());
-  double *d_F = thrust::raw_pointer_cast(fields.F.d_container.data());
-  double *d_G = thrust::raw_pointer_cast(fields.G.d_container.data());
-  double *d_T = thrust::raw_pointer_cast(fields.T.d_container.data());
-
   BoundaryLR_kernel_call<<<numBlocks, threadsPerBlock>>>(
-      d_U, d_V, d_F, d_G, d_T, domain.imax + 2, domain.jmax + 2);
+      thrust::raw_pointer_cast(fields.U.d_container.data()),
+      thrust::raw_pointer_cast(fields.V.d_container.data()),
+      thrust::raw_pointer_cast(fields.F.d_container.data()),
+      thrust::raw_pointer_cast(fields.G.d_container.data()),
+      thrust::raw_pointer_cast(fields.T.d_container.data()), domain.imax + 2,
+      domain.jmax + 2);
   BoundaryTB_kernel_call<<<numBlocks, threadsPerBlock>>>(
-      d_U, d_V, d_F, d_G, d_T, domain.imax + 2, domain.jmax + 2, Th, Tc);
-  cudaDeviceSynchronize();
+      thrust::raw_pointer_cast(fields.U.d_container.data()),
+      thrust::raw_pointer_cast(fields.V.d_container.data()),
+      thrust::raw_pointer_cast(fields.F.d_container.data()),
+      thrust::raw_pointer_cast(fields.G.d_container.data()),
+      thrust::raw_pointer_cast(fields.T.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, Th, Tc);
+  //cudaDeviceSynchronize();
 }
 
 __global__ void BoundaryP_kernel_call(double *P, int imax, int jmax) {
@@ -103,9 +107,8 @@ void BoundaryP_kernel(Matrix &p, const Domain &domain) {
   dim3 threadsPerBlock(256);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
-  double *d_P = thrust::raw_pointer_cast(p.d_container.data());
-
-  BoundaryP_kernel_call<<<numBlocks, threadsPerBlock>>>(d_P, domain.imax + 2,
-                                                        domain.jmax + 2);
-  cudaDeviceSynchronize();
+  BoundaryP_kernel_call<<<numBlocks, threadsPerBlock>>>(
+      thrust::raw_pointer_cast(p.d_container.data()), domain.imax + 2,
+      domain.jmax + 2);
+  //cudaDeviceSynchronize();
 }
