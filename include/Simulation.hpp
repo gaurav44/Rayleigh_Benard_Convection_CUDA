@@ -8,16 +8,16 @@
 
 class Simulation {
 public:
-  Simulation(Fields* fields);
-  void calculate_dt(Domain &domain);
+  Simulation(Fields* fields, Domain* domain);
+  void calculate_dt();
 
-  void calculate_temperature(const Domain &domain);
+  void calculate_temperature();
 
-  void calculate_fluxes(const Domain &domain);
+  void calculate_fluxes();
 
-  void calculate_rs(const Domain &domain);
+  void calculate_rs();
 
-  void calculate_velocities(const Domain &domain);
+  void calculate_velocities();
   Matrix &getT() { return _fields->T; }
   Matrix &getP() { return _fields->P; }
   Matrix &getRS() { return _fields->RS; }
@@ -31,6 +31,7 @@ public:
   }
   //Fields &getFields() { return _fields; }
   Fields* _fields;
+  Domain* _domain;
 };
 extern void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
                                const Domain &domain);

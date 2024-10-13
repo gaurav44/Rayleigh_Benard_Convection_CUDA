@@ -6,29 +6,27 @@ Matrix::Matrix() {}
 // template <typename T>
 Matrix::Matrix(int i_max, int j_max, double init_val)
     : _imax(i_max), _jmax(j_max) {
+
   _container.resize(i_max * j_max);
-  //h_container.resize(i_max * j_max);
   d_container.resize(i_max * j_max);
   std::fill(_container.begin(), _container.end(), init_val);
- // thrust::fill(h_container.begin(), h_container.end(), init_val);
   thrust::fill(d_container.begin(), d_container.end(), init_val);
 }
 
 // template <typename T>
 Matrix::Matrix(int i_max, int j_max) : _imax(i_max), _jmax(j_max) {
   _container.resize(i_max * j_max);
-//  h_container.resize(i_max * j_max);
   d_container.resize(i_max * j_max);
 }
 
-Matrix::Matrix(const Matrix &other) : _imax(other._imax), _jmax(other._jmax)
-        /*h_container(other.h_container)*/
-{
-    _container.resize(_imax*_jmax);
-    d_container.resize(_imax*_jmax);
-    std::copy(other._container.begin(), other._container.end(),_container.begin());
-    thrust::copy(other._container.begin(), other._container.end(), d_container.begin());
-    // std::cout << "Copy constructor called\n";
+Matrix::Matrix(const Matrix &other) : _imax(other._imax), _jmax(other._jmax) {
+  _container.resize(_imax * _jmax);
+  d_container.resize(_imax * _jmax);
+  std::copy(other._container.begin(), other._container.end(),
+            _container.begin());
+  thrust::copy(other._container.begin(), other._container.end(),
+               d_container.begin());
+  // std::cout << "Copy constructor called\n";
 }
 
 // template<typename T>
@@ -52,12 +50,12 @@ Matrix &Matrix::operator=(const Matrix &other) {
   if (this != &other) {
     _imax = other._imax;
     _jmax = other._jmax;
-    
-    _container.resize(_imax*_jmax);
-    d_container.resize(_imax*_jmax);
-    std::cout << "copy assignment called\n";
-//    h_container = other.h_container;
-    thrust::copy(other._container.begin(), other._container.end(), d_container.begin());
+
+    _container.resize(_imax * _jmax);
+    d_container.resize(_imax * _jmax);
+
+    thrust::copy(other._container.begin(), other._container.end(),
+                 d_container.begin());
     _container = other._container;
   }
   return *this;

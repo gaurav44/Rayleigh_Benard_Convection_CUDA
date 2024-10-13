@@ -13,76 +13,51 @@
 int main() {
   Domain domain;
 
-  domain.xlength = 8.5;
-  domain.ylength = 1;
-  domain.nu = 0.0296;                   // Kinematic Viscosity
-  domain.Re = 1 / domain.nu;            // Reynold's number
-  domain.alpha = 0.00000237;            // Thermal diffusivity
-  domain.Pr = domain.nu / domain.alpha; // Prandtl number
-  domain.beta =
-      0.00179; // Coefficient of thermal expansion (used in Boussinesq approx)
-  domain.tau = 0.5;   // Safety factor for timestep
-  domain.gamma = 0.5; // Donor-cell scheme factor (will be used in convection)
-  domain.GX = 0;
-  domain.GY = -9.81; // Gravitational acceleration
-  domain.imax = 85;  // grid points in x
-  domain.jmax = 18;  // grid points in y
-  domain.dx = domain.xlength / domain.imax;
-  domain.dy = domain.ylength / domain.jmax;
-  domain.dt = 0.05; // Timestep
+  domain.readDomainParameters("domain.txt");
 
-  Fields fields(domain.imax+2, domain.jmax+2, 293.0);
+  Fields fields(domain.imax + 2, domain.jmax + 2, 293.0);
 
   Discretization disc(domain.imax + 2, domain.jmax + 2, domain.dx, domain.dy,
                       domain.gamma);
 
-  Simulation sim(&fields);
+  Simulation sim(&fields, &domain);
   sim.copyAllToDevice();
-  Boundary boundary(&fields);
+  Boundary boundary(&fields, &domain, 294.78, 291.20); // T_hot, T_cold -> for the top and bottom boundaries
 
-  double t_end = 55000;
-  double omg = 1.7;     // SOR relaxation factor
-  double eps = 0.00001; // Tolerance for SOR
-
-  int itermax = 500; // Maximum iterations for SOR
-
-  double Th = 294.78;
-  double Tc = 291.20;
-
-  boundary.apply_boundaries(domain, Th, Tc);
-  boundary.apply_pressure(domain);
+  boundary.apply_boundaries();
+  boundary.apply_pressure();
 
   double t = 0;
+  double t_end = 15000;
   int timestep = 0;
   // Time loop
   while (t < t_end) {
-    sim.calculate_dt(domain);
+    sim.calculate_dt();
 
-    sim.calculate_temperature(domain);
+    sim.calculate_temperature();
 
-    sim.calculate_fluxes(domain);
+    sim.calculate_fluxes();
 
-    sim.calculate_rs(domain);
+    sim.calculate_rs();
 
     int iter = 0;
-    double res = 10;
+    double res = 10.0;
 
-    while (res > eps) {
-      if (iter >= itermax) {
+    while (res > PressureSolver::eps) {
+      if (iter >= PressureSolver::itermax) {
         std::cout << "Pressure solver not converged\n";
         std::cout << "dt: " << domain.dt << "Time: "
                   << " residual:" << res << " iterations: " << iter << "\n";
         break;
       }
-      boundary.apply_pressure(domain);
+      boundary.apply_pressure();
 
-      res =
-          PressureSolver::calculate_pressure(sim.getP(), sim.getRS(), domain, omg);
+      res = PressureSolver::calculate_pressure(sim.getP(), sim.getRS(), domain);
       iter++;
     }
-    sim.calculate_velocities(domain);
+    sim.calculate_velocities();
 
-    boundary.apply_boundaries(domain, Th, Tc);
+    boundary.apply_boundaries();
 
     if (timestep % 1000 == 0) {
       if (timestep % 15000 == 0) {
