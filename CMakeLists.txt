@@ -30,7 +30,7 @@ set(SOURCES_CPP
     src/Simulation.cpp
     src/Boundary.cpp
     #    src/Discretization.cpp
-    # src/PressureSolver.cpp
+    src/PressureSolver.cpp
 
 )
 
@@ -42,7 +42,7 @@ set(SOURCES_CU
     src/RSKernel.cu
     src/BoundaryKernels.cu
     src/Discretization.cu
-    src/PressureSolver.cu
+    #src/PressureSolver.cu
     src/PressureSolverKernel.cu
     src/VelocityKernels.cu
     src/DtKernel.cu
