@@ -1,19 +1,9 @@
 #include "Boundary.hpp"
 
-void Boundary::apply_boundaries(Fields &fields, const Domain &domain, double Th,
-                                double Tc) {
-  // fields.U.copyToDevice();
-  // fields.V.copyToDevice();
-  // fields.F.copyToDevice();
-  // fields.G.copyToDevice();
-  // fields.T.copyToDevice();
-  Boundary_kernel(fields, domain, Th, Tc);
-  // fields.U.copyToHost();
-  // fields.V.copyToHost();
-  // fields.F.copyToHost();
-  // fields.G.copyToHost();
-  // fields.T.copyToHost();
+Boundary::Boundary(Fields *fields) : _fields(fields) {}
 
+void Boundary::apply_boundaries(const Domain &domain, double Th, double Tc) {
+  Boundary_kernel(*_fields, domain, Th, Tc);
   //  int imaxb = domain.imax + 2;
   //  int jmaxb = domain.jmax + 2;
 
@@ -46,10 +36,8 @@ void Boundary::apply_boundaries(Fields &fields, const Domain &domain, double Th,
   // }
 }
 
-void Boundary::apply_pressure(Matrix &p, const Domain &domain) {
-  // p.copyToDevice();
-  BoundaryP_kernel(p, domain);
-  // p.copyToHost();
+void Boundary::apply_pressure(const Domain &domain) {
+  BoundaryP_kernel(_fields->P, domain);
   // int imaxb = domain.imax + 2;
   // int jmaxb = domain.jmax + 2;
   // for (int j = 0; j < jmaxb; j++) {

@@ -1,6 +1,8 @@
 #include "Simulation.hpp"
 
-void Simulation::calculate_dt(Domain &domain, const Fields &fields) {
+Simulation::Simulation(Fields* fields) : _fields(fields) {}
+
+void Simulation::calculate_dt(Domain &domain) {
   double CFLu = 0.0;
   double CFLv = 0.0;
   double CFLnu = 0.0;
@@ -12,7 +14,7 @@ void Simulation::calculate_dt(Domain &domain, const Fields &fields) {
   // double u_max = 0;
   // double v_max = 0;
 
-  auto [u_max, v_max] = Dt_kernel(fields.U, fields.V, domain);
+  auto [u_max, v_max] = Dt_kernel(_fields->U, _fields->V, domain);
 
   // for (int i = 1; i < domain.imax + 1; i++) {
   //   for (int j = 1; j < domain.jmax + 1; j++) {
@@ -33,33 +35,31 @@ void Simulation::calculate_dt(Domain &domain, const Fields &fields) {
   domain.dt = domain.tau * domain.dt;
 }
 
-void Simulation::calculate_temperature(const Matrix &U, const Matrix &V,
-                                       Matrix &T, const Domain &domain) {
+void Simulation::calculate_temperature(const Domain &domain) {
 
-  //Matrix T_old = T;
-  //T_old.copyToDevice();
+  // Matrix T_old = T;
+  // T_old.copyToDevice();
 
- // temperature_kernel(U, V, T, T_old, domain);
-   temperature_kernel(U, V, T, domain);
+  // temperature_kernel(U, V, T, T_old, domain);
+  temperature_kernel(_fields->U, _fields->V, _fields->T, domain);
   //      T.d_container, U.d_container, V.d_container, domain.alpha, domain.dt,
   // domain.imax, domain.jmax);
 
- // for (int i = 1; i < domain.imax + 1; i++) {
- //   for (int j = 1; j < domain.jmax + 1; j++) {
- //     T(i, j) =
- //         T_old(i, j) +
- //         domain.dt *
- //             (domain.alpha * Discretization::diffusion(T_old, domain, i, j) -
- //              Discretization::convection_T(U, V, T_old, domain, i, j));
- //   }
- // }
+  // for (int i = 1; i < domain.imax + 1; i++) {
+  //   for (int j = 1; j < domain.jmax + 1; j++) {
+  //     T(i, j) =
+  //         T_old(i, j) +
+  //         domain.dt *
+  //             (domain.alpha * Discretization::diffusion(T_old, domain, i, j)
+  //             -
+  //              Discretization::convection_T(U, V, T_old, domain, i, j));
+  //   }
+  // }
 }
 
-void Simulation::calculate_fluxes(const Matrix &U, const Matrix &V,
-                                  const Matrix &T, Matrix &F, Matrix &G,
-                                  const Domain &domain) {
-  F_kernel(U, V, T, F, domain);
-  G_kernel(U, V, T, G, domain);
+void Simulation::calculate_fluxes(const Domain &domain) {
+  F_kernel(_fields->U, _fields->V, _fields->T, _fields->F, domain);
+  G_kernel(_fields->U, _fields->V, _fields->T, _fields->G, domain);
 
   //  for (int i = 1; i < domain.imax; i++) {
   //    for (int j = 1; j < domain.jmax + 1; j++) {
@@ -88,9 +88,8 @@ void Simulation::calculate_fluxes(const Matrix &U, const Matrix &V,
   //  }
 }
 
-void Simulation::calculate_rs(const Matrix &F, const Matrix &G, Matrix &RS,
-                              const Domain &domain) {
-  RS_kernel(F, G, RS, domain);
+void Simulation::calculate_rs(const Domain &domain) {
+  RS_kernel(_fields->F, _fields->G, _fields->RS, domain);
 
   // for (int i = 1; i < domain.imax + 1; i++) {
   //   for (int j = 1; j < domain.jmax + 1; j++) {
@@ -101,11 +100,9 @@ void Simulation::calculate_rs(const Matrix &F, const Matrix &G, Matrix &RS,
   // }
 }
 
-void Simulation::calculate_velocities(Matrix &U, Matrix &V, const Matrix &F,
-                                      const Matrix &G, const Matrix &P,
-                                      const Domain &domain) {
-  U_kernel(U, F, P, domain);
-  V_kernel(V, G, P, domain);
+void Simulation::calculate_velocities(const Domain &domain) {
+  U_kernel(_fields->U, _fields->F, _fields->P, domain);
+  V_kernel(_fields->V, _fields->G, _fields->P, domain);
   // for (int i = 1; i < domain.imax; i++) {
   //   for (int j = 1; j < domain.jmax + 1; j++) {
   //     U(i, j) = F(i, j) - domain.dt * (P(i + 1, j) - P(i, j)) / domain.dx;

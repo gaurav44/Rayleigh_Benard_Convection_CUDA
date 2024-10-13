@@ -12,14 +12,13 @@ __global__ void temperature_kernel_call(const double *U, const double *V,
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
     int idx = j * imax + i;
     T[idx] =
-        T_old[idx] +
-        dt * (alpha * Discretization::diffusion(T_old, dx, dy, i, j, imax) -
-              Discretization::convection_T(U, V, T_old, gamma, dx, dy, i, j,
-                                           imax));
+        T_old[idx] + dt * (alpha * Discretization::diffusion(T_old, i, j) -
+                           Discretization::convection_T(U, V, T_old, i, j));
   }
 }
 
-void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T, const Domain &domain) {
+void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
+                        const Domain &domain) {
 
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
@@ -28,16 +27,16 @@ void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T, const Domai
   thrust::device_vector<double> T_old(T.d_container.size());
   thrust::copy(T.d_container.begin(), T.d_container.end(), T_old.begin());
 
-  //const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
-  //const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
-  //double *d_T = thrust::raw_pointer_cast(T.d_container.data());
-  //const double *dT_old = thrust::raw_pointer_cast(T_old.data());
+  // const double *d_U = thrust::raw_pointer_cast(U.d_container.data());
+  // const double *d_V = thrust::raw_pointer_cast(V.d_container.data());
+  // double *d_T = thrust::raw_pointer_cast(T.d_container.data());
+  // const double *dT_old = thrust::raw_pointer_cast(T_old.data());
 
   temperature_kernel_call<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(T.d_container.data()),
-      thrust::raw_pointer_cast(T_old.data()), domain.dx, domain.dy, domain.imax + 2,
-      domain.jmax + 2, domain.gamma, domain.alpha, domain.dt);
-  //cudaDeviceSynchronize();
+      thrust::raw_pointer_cast(T_old.data()), domain.dx, domain.dy,
+      domain.imax + 2, domain.jmax + 2, domain.gamma, domain.alpha, domain.dt);
+  // cudaDeviceSynchronize();
 }

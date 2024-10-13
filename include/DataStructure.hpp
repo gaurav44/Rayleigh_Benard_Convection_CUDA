@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <thrust/copy.h>
@@ -8,7 +9,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <vector>
-#include <iomanip>
 
 /**
  * @brief General 2D data structure around std::vector, in column
@@ -72,12 +72,12 @@ public:
 
   double operator()(DEV, int i, int j) const;
 
-  void printField(int timestep) {
-    //this->copyToHost();
+  void printField(int timestep) const {
+    // this->copyToHost();
     std::string fileName = "T" + std::to_string(timestep) + ".txt";
     std::ofstream tmp(fileName);
-    for (int j = 1; j < _jmax-1; j++) {
-      for (int i = 1; i < _imax-1; i++) {
+    for (int j = 1; j < _jmax - 1; j++) {
+      for (int i = 1; i < _imax - 1; i++) {
         tmp << std::setprecision(8) << this->operator()(i, j) << ",";
       }
       tmp << "\n";
@@ -87,7 +87,7 @@ public:
   void copyToDevice();
   void copyToDevice() const;
 
-  void copyToHost();
+  void copyToHost() ;
 
   //  thrust::host_vector<double> h_container;
   thrust::device_vector<double> d_container;

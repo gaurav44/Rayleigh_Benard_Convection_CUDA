@@ -10,21 +10,19 @@ __global__ void SOR_kernel_call(double *P, const double *RS, double dx,
 
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1 && (i + j) % 2 == color) {
     int idx = imax * j + i;
-    P[idx] =
-        (1.0 - omg) * P[idx] +
-        coeff * (Discretization::sor_helper(P, dx, dy, i, j, imax) - RS[idx]);
+    P[idx] = (1.0 - omg) * P[idx] +
+             coeff * (Discretization::sor_helper(P, i, j) - RS[idx]);
   }
 }
 
 __global__ void Residual_kernel_call(const double *P, const double *RS,
-                                     double dx, double dy, int imax,
-                                     double jmax, double *residual) {
+                                     int imax, double jmax, double *residual) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
     int idx = imax * j + i;
-    double val = Discretization::laplacian(P, dx, dy, i, j, imax) - RS[idx];
+    double val = Discretization::laplacian(P, i, j) - RS[idx];
     atomicAdd(residual, (val * val));
   }
 }
@@ -53,7 +51,7 @@ double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain,
   cudaMemcpy(d_rloc, &h_rloc, sizeof(double), cudaMemcpyHostToDevice);
 
   Residual_kernel_call<<<numBlocks, threadsPerBlock>>>(
-      d_P, d_RS, domain.dx, domain.dy, domain.imax + 2, domain.jmax + 2, d_rloc);
+      d_P, d_RS, domain.imax + 2, domain.jmax + 2, d_rloc);
 
   // cudaDeviceSynchronize();
   cudaMemcpy(&h_rloc, d_rloc, sizeof(double), cudaMemcpyDeviceToHost);

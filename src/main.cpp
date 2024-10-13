@@ -1,5 +1,6 @@
 #include "Boundary.hpp"
 #include "DataStructure.hpp"
+#include "Discretization.hpp"
 #include "Domain.hpp"
 #include "Fields.hpp"
 #include "PressureSolver.hpp"
@@ -30,15 +31,14 @@ int main() {
   domain.dy = domain.ylength / domain.jmax;
   domain.dt = 0.05; // Timestep
 
-  Fields fields;
-  fields.U = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.V = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.F = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.G = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.P = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.T = Matrix(domain.imax + 2, domain.jmax + 2, 293.0);
-  fields.T_old = Matrix(domain.imax + 2, domain.jmax + 2, 293.0);
-  fields.RS = Matrix(domain.imax + 2, domain.jmax + 2, 0.0);
+  Fields fields(domain.imax+2, domain.jmax+2, 293.0);
+
+  Discretization disc(domain.imax + 2, domain.jmax + 2, domain.dx, domain.dy,
+                      domain.gamma);
+
+  Simulation sim(&fields);
+  sim.copyAllToDevice();
+  Boundary boundary(&fields);
 
   double t_end = 55000;
   double omg = 1.7;     // SOR relaxation factor
@@ -49,29 +49,20 @@ int main() {
   double Th = 294.78;
   double Tc = 291.20;
 
-  // Apply Boundaries
-  fields.F.copyToDevice();
-  fields.G.copyToDevice();
-  fields.T.copyToDevice();
-  fields.U.copyToDevice();
-  fields.V.copyToDevice();
-  fields.P.copyToDevice();
-
-  Boundary::apply_boundaries(fields, domain, Th, Tc);
-  Boundary::apply_pressure(fields.P, domain);
+  boundary.apply_boundaries(domain, Th, Tc);
+  boundary.apply_pressure(domain);
 
   double t = 0;
   int timestep = 0;
   // Time loop
   while (t < t_end) {
-    Simulation::calculate_dt(domain, fields);
-    
-    Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
+    sim.calculate_dt(domain);
 
-    Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F,
-                                 fields.G, domain);
+    sim.calculate_temperature(domain);
 
-    Simulation::calculate_rs(fields.F, fields.G, fields.RS, domain);
+    sim.calculate_fluxes(domain);
+
+    sim.calculate_rs(domain);
 
     int iter = 0;
     double res = 10;
@@ -79,25 +70,24 @@ int main() {
     while (res > eps) {
       if (iter >= itermax) {
         std::cout << "Pressure solver not converged\n";
-        std::cout << "dt: " << domain.dt << "Time: " << " residual:" << res
-                  << " iterations: " << iter << "\n";
+        std::cout << "dt: " << domain.dt << "Time: "
+                  << " residual:" << res << " iterations: " << iter << "\n";
         break;
       }
-      Boundary::apply_pressure(fields.P, domain);
+      boundary.apply_pressure(domain);
 
       res =
-          PressureSolver::calculate_pressure(fields.P, fields.RS, domain, omg);
+          PressureSolver::calculate_pressure(sim.getP(), sim.getRS(), domain, omg);
       iter++;
     }
-    Simulation::calculate_velocities(fields.U, fields.V, fields.F, fields.G,
-                                     fields.P, domain);
+    sim.calculate_velocities(domain);
 
-    Boundary::apply_boundaries(fields, domain, Th, Tc);
+    boundary.apply_boundaries(domain, Th, Tc);
 
     if (timestep % 1000 == 0) {
       if (timestep % 15000 == 0) {
-        fields.T.copyToHost();
-        fields.T.printField(timestep);
+        sim.getT().copyToHost();
+        sim.getT().printField(timestep);
       }
       std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
                 << " iterations: " << iter << "\n";
