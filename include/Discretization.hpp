@@ -12,8 +12,15 @@ public:
   __device__ static double convection_u(const double *U, const double *V, int i,
                                         int j);
 
+  __device__ static double convection_uSharedMem(const double *U,
+                                                 const double *V, int i, int j,
+                                                 int imax);
+
   __device__ static double convection_v(const double *U, const double *V, int i,
                                         int j);
+
+  __device__ static double convection_vSharedMem(const double *U, const double *V, int i,
+                                        int j, int imax);
 
   __device__ static double convection_T(const double *U, const double *V,
                                         const double *T, int i, int j);
@@ -32,9 +39,14 @@ public:
 
   // Calculating the SOR Helper
   __device__ static double sor_helper(const double *P, int i, int j);
+  __device__ static double sor_helperSharedMem(const double *P, int i, int j, int imax);
 
   __device__ static double interpolate(const double *A, int i, int j,
                                        int i_offset, int j_offset);
+
+  __device__ static double interpolateSharedMem(const double *A, int i, int j,
+                                       int i_offset, int j_offset, int imax);
+
 };
 // Maybe move this into a global struct of constants
 static __constant__ int _imax;

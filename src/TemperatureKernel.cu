@@ -26,6 +26,7 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
                                               double dx, double dy, int imax,
                                               double jmax, double gamma,
                                               double alpha, double dt) {
+  // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
@@ -41,6 +42,7 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
   int local_j = threadIdx.y + 1;
   int local_idx = local_j * (blockDim.x + 2) + local_i;
 
+  // load the central part into shared memory
   if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
       local_j < blockDim.y + 1) {
     shared_T[local_idx] = T[global_idx];
@@ -83,7 +85,7 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
 
   __syncthreads();
 
-  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+  if (i < imax - 1 && j < jmax - 1) {
     shared_T[local_idx] =
         shared_Told[local_idx] +
         dt * (alpha * Discretization::diffusionSharedMem(
