@@ -1,4 +1,5 @@
 #include "PressureSolver.hpp"
+#include "cuda_utils.hpp"
 
 __global__ void SOR_kernel_call(double *P, const double *RS, double dx,
                                 double dy, int imax, double jmax, double omg,
@@ -40,23 +41,27 @@ double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain,
                                                   domain.dy, domain.imax + 2,
                                                   domain.jmax + 2, omg, 0);
 
+  CHECK(cudaGetLastError());
+
   SOR_kernel_call<<<numBlocks, threadsPerBlock>>>(d_P, d_RS, domain.dx,
                                                   domain.dy, domain.imax + 2,
                                                   domain.jmax + 2, omg, 1);
+  CHECK(cudaGetLastError());
 
   double res = 0.0;
   double *d_rloc;
   double h_rloc = 0.0;
-  cudaMalloc(&d_rloc, sizeof(double));
-  cudaMemcpy(d_rloc, &h_rloc, sizeof(double), cudaMemcpyHostToDevice);
+  CHECK(cudaMalloc(&d_rloc, sizeof(double)));
+  CHECK(cudaMemcpy(d_rloc, &h_rloc, sizeof(double), cudaMemcpyHostToDevice));
 
   Residual_kernel_call<<<numBlocks, threadsPerBlock>>>(
       d_P, d_RS, domain.imax + 2, domain.jmax + 2, d_rloc);
 
+  CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
-  cudaMemcpy(&h_rloc, d_rloc, sizeof(double), cudaMemcpyDeviceToHost);
+  CHECK(cudaMemcpy(&h_rloc, d_rloc, sizeof(double), cudaMemcpyDeviceToHost));
   res = h_rloc / (domain.imax * domain.jmax);
   res = std::sqrt(res);
-  cudaFree(d_rloc);
+  CHECK(cudaFree(d_rloc));
   return res;
 }

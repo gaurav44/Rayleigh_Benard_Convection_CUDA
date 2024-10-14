@@ -1,4 +1,5 @@
 #include "Boundary.hpp"
+#include "cuda_utils.hpp"
 
 __global__ void BoundaryLR_kernel_call(double *U, double *V, double *F,
                                        double *G, double *T, int imax,
@@ -64,6 +65,7 @@ void Boundary_kernel(Fields &fields, const Domain &domain, double Th,
       thrust::raw_pointer_cast(fields.G.d_container.data()),
       thrust::raw_pointer_cast(fields.T.d_container.data()), domain.imax + 2,
       domain.jmax + 2);
+
   BoundaryTB_kernel_call<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(fields.U.d_container.data()),
       thrust::raw_pointer_cast(fields.V.d_container.data()),
@@ -71,6 +73,7 @@ void Boundary_kernel(Fields &fields, const Domain &domain, double Th,
       thrust::raw_pointer_cast(fields.G.d_container.data()),
       thrust::raw_pointer_cast(fields.T.d_container.data()), domain.imax + 2,
       domain.jmax + 2, Th, Tc);
+  CHECK(cudaGetLastError());
   //cudaDeviceSynchronize();
 }
 
@@ -110,5 +113,6 @@ void BoundaryP_kernel(Matrix &p, const Domain &domain) {
   BoundaryP_kernel_call<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(p.d_container.data()), domain.imax + 2,
       domain.jmax + 2);
+  CHECK(cudaGetLastError());
   //cudaDeviceSynchronize();
 }

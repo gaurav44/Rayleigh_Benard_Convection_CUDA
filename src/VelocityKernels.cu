@@ -1,5 +1,6 @@
 #include "Simulation.hpp"
 #include "thrust/device_vector.h"
+#include "cuda_utils.hpp"
 
 __global__ void U_kernel_call(double *U, const double *F, const double *P,
                               double dx, int imax, double jmax, double dt) {
@@ -24,6 +25,8 @@ void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dx,
       domain.imax + 2, domain.jmax + 2, domain.dt);
+
+  CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }
 
@@ -50,5 +53,7 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dy,
       domain.imax + 2, domain.jmax + 2, domain.dt);
+
+  CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }

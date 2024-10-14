@@ -1,5 +1,6 @@
 #include "Simulation.hpp"
 #include <thrust/device_vector.h>
+#include "cuda_utils.hpp"
 
 __global__ void temperature_kernel_call(const double *U, const double *V,
                                         double *T, const double *T_old,
@@ -33,5 +34,6 @@ void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
       thrust::raw_pointer_cast(T.d_container.data()),
       thrust::raw_pointer_cast(T_old.data()), domain.dx, domain.dy,
       domain.imax + 2, domain.jmax + 2, domain.gamma, domain.alpha, domain.dt);
+  CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }

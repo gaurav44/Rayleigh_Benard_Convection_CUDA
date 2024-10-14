@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iterator>
 #include <thrust/device_vector.h>
+#include "cuda_utils.hpp"
 
 __global__ void UMax_kernel_call(const double *U, int imax, double jmax,
                                  double *max_results) {
@@ -75,29 +76,31 @@ std::pair<double, double> Dt_kernel(const Matrix &U, const Matrix &V,
   double *d_u_block_results;
   double *d_v_block_results;
 
-  cudaMalloc(&d_u_block_results, numBlocks.x * numBlocks.y * sizeof(double));
-  cudaMalloc(&d_v_block_results, numBlocks.x * numBlocks.y * sizeof(double));
+  CHECK(cudaMalloc(&d_u_block_results, numBlocks.x * numBlocks.y * sizeof(double)));
+  CHECK(cudaMalloc(&d_v_block_results, numBlocks.x * numBlocks.y * sizeof(double)));
 
   UMax_kernel_call<<<numBlocks, threadsPerBlock, 256 * sizeof(double)>>>(
       thrust::raw_pointer_cast(U.d_container.data()), domain.imax + 2,
       domain.jmax + 2, d_u_block_results);
+  CHECK(cudaGetLastError());
 
   VMax_kernel_call<<<numBlocks, threadsPerBlock, 256 * sizeof(double)>>>(
       thrust::raw_pointer_cast(V.d_container.data()), domain.imax + 2,
       domain.jmax + 2, d_v_block_results);
+  CHECK(cudaGetLastError());
 
-  cudaDeviceSynchronize();
+  CHECK(cudaDeviceSynchronize());
 
   double *h_umax_results = new double[numBlocks.x * numBlocks.y];
   double *h_vmax_results = new double[numBlocks.x * numBlocks.y];
-  cudaMemcpy(h_umax_results, d_u_block_results,
+  CHECK(cudaMemcpy(h_umax_results, d_u_block_results,
              numBlocks.x * numBlocks.y * sizeof(double),
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(h_vmax_results, d_v_block_results,
+             cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy(h_vmax_results, d_v_block_results,
              numBlocks.x * numBlocks.y * sizeof(double),
-             cudaMemcpyDeviceToHost);
-  cudaFree(d_u_block_results);
-  cudaFree(d_v_block_results);
+             cudaMemcpyDeviceToHost));
+  CHECK(cudaFree(d_u_block_results));
+  CHECK(cudaFree(d_v_block_results));
 
   // Find the maximum in the result array
   for (int i = 0; i < numBlocks.x * numBlocks.y; ++i) {

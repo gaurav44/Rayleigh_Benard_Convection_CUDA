@@ -1,5 +1,6 @@
 #include "Simulation.hpp"
 #include <thrust/device_vector.h>
+#include "cuda_utils.hpp"
 
 __global__ void F_kernel_call(const double *U, const double *V, const double *T,
                               double *F, int imax, int jmax, double nu, double dt,
@@ -29,5 +30,6 @@ void F_kernel(const Matrix &U, const Matrix &V, const Matrix &T, Matrix &F,
       thrust::raw_pointer_cast(T.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()), domain.imax + 2,
       domain.jmax + 2, domain.nu, domain.dt, domain.GX, domain.beta);
+  CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }
