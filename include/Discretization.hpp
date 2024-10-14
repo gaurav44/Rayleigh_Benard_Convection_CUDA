@@ -17,9 +17,15 @@ public:
 
   __device__ static double convection_T(const double *U, const double *V,
                                         const double *T, int i, int j);
+  __device__ static double convection_TSharedMem(const double *U,
+                                                 const double *V,
+                                                 const double *T, int i, int j,
+                                                 int imax);
 
   // Using the same for calculating diffusive part of U and V
   __device__ static double diffusion(const double *A, int i, int j);
+  __device__ static double diffusionSharedMem(const double *A, int i, int j,
+                                              int imax);
 
   // Calculating the laplacian part of the equation
   __device__ static double laplacian(const double *P, int i, int j);

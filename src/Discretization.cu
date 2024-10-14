@@ -82,6 +82,27 @@ __device__ double Discretization::convection_T(const double *U, const double *V,
   return term1 + term2;
 }
 
+__device__ double Discretization::convection_TSharedMem(const double *U, const double *V,
+                                               const double *T, int i, int j, int imax) {
+  int idx = imax * j + i;
+  int idx_right = imax * j + (i + 1);
+  int idx_left = imax * j + (i - 1);
+  double term1 =
+      (1 / (2 * _dx)) * (U[idx] * (T[idx] + T[idx_right]) -
+                         U[idx_left] * (T[idx_left] + T[idx])) +
+      (_gamma / (2 * _dx)) * (fabs(U[idx]) * (T[idx] - T[idx_right]) -
+                              fabs(U[idx_left]) * (T[idx_left] - T[idx]));
+
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
+  double term2 =
+      (1 / (2 * _dy)) * (V[idx] * (T[idx] + T[idx_top]) -
+                         V[idx_bottom] * (T[idx_bottom] + T[idx])) +
+      (_gamma / (2 * _dy)) * (fabs(V[idx]) * (T[idx] - T[idx_top]) -
+                              fabs(V[idx_bottom]) * (T[idx_bottom] - T[idx]));
+  return term1 + term2;
+}
+
 __device__ double Discretization::diffusion(const double *A, int i, int j) {
   int idx = _imax * j + i;
   int idx_right = _imax * j + i + 1;
@@ -90,6 +111,19 @@ __device__ double Discretization::diffusion(const double *A, int i, int j) {
 
   int idx_top = _imax * (j + 1) + i;
   int idx_bottom = _imax * (j - 1) + i;
+
+  double term2 = (A[idx_top] - 2 * A[idx] + A[idx_bottom]) / (_dy * _dy);
+  return term1 + term2;
+}
+
+__device__ double Discretization::diffusionSharedMem(const double *A, int i, int j, int imax) {
+  int idx = imax * j + i;
+  int idx_right = imax * j + i + 1;
+  int idx_left = imax * j + i - 1;
+  double term1 = (A[idx_right] - 2 * A[idx] + A[idx_left]) / (_dx * _dx);
+
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
 
   double term2 = (A[idx_top] - 2 * A[idx] + A[idx_bottom]) / (_dy * _dy);
   return term1 + term2;

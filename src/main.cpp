@@ -8,8 +8,6 @@
 #include <iostream>
 #include <unistd.h>
 
-#define BLOCK_SIZE = 8;
-
 int main() {
   Domain domain;
 
@@ -35,7 +33,7 @@ int main() {
     sim.calculate_dt();
 
     sim.calculate_temperature();
-
+    
     sim.calculate_fluxes();
 
     sim.calculate_rs();
