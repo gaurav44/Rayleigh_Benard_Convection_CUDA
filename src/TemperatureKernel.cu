@@ -90,7 +90,7 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
         shared_Told[local_idx] +
         dt * (alpha * Discretization::diffusionSharedMem(
                           shared_Told, local_i, local_j, blockDim.x + 2) -
-              Discretization::convection_T(U, V, T_old, i, j));
+              Discretization::convection_TSharedMem(shared_U, shared_V, shared_Told, local_i, local_j, blockDim.x+2));
     T[global_idx] = shared_T[local_idx];
   }
 }
