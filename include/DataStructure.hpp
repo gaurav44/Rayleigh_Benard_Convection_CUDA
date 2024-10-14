@@ -11,10 +11,10 @@
  * major format.
  *
  */
-template <typename T>
+//template <typename T>
 class Matrix {
  public:
-  Matrix<T>();// = default;
+  Matrix();// = default;
 
   /**
    * @brief Constructor with initial value
@@ -24,12 +24,12 @@ class Matrix {
    * @param[in] initial value for the elements
    *
    */
-  // Matrix<T>(int i_max, int j_max, double init_val)
+  // Matrix(int i_max, int j_max, double init_val)
   //     : _imax(i_max), _jmax(j_max) {
   //   _container.resize(i_max * j_max);
   //   std::fill(_container.begin(), _container.end(), init_val);
   // }
-  Matrix<T>(int i_max, int j_max, double init_val);
+  Matrix(int i_max, int j_max, double init_val);
   //     : _imax(i_max), _jmax(j_max) {
   //   _container.resize(i_max * j_max);
   //   std::fill(_container.begin(), _container.end(), init_val);
@@ -42,7 +42,7 @@ class Matrix {
    * @param[in] number of elements in y direction
    *
    */
-  Matrix<T>(int i_max, int j_max);
+  Matrix(int i_max, int j_max);
   //  : _imax(i_max), _jmax(j_max) {
   //   _container.resize(i_max * j_max);
   // }
@@ -54,7 +54,7 @@ class Matrix {
   //  * @param[in] y index
   //  * @param[out] reference to the value
   //  */
-  T &operator()(int i, int j); //{ return _container.at(_imax * j + i); }
+  double &operator()(int i, int j); //{ return _container.at(_imax * j + i); }
 
   // /**
   //  * @brief Element access using index
@@ -63,7 +63,7 @@ class Matrix {
   //  * @param[in] y index
   //  * @param[out] value of the element
   //  */
-  T operator()(int i, int j) const;// { return _container.at(_imax * j + i); }
+  double operator()(int i, int j) const;// { return _container.at(_imax * j + i); }
 
   // /// get the number of elements in x direction
   // int imax() const { return _imax; }
@@ -79,10 +79,7 @@ class Matrix {
   //     std::cout << "\n";
   //   }
   // }
-  void copyToDevice();
 
-//  thrust::host_vector<T> h_container;
-//  thrust::device_vector<T> d_container;
 
  private:
   /// Number of elements in x direction
@@ -91,7 +88,7 @@ class Matrix {
   int _jmax;
 
   /// Data container
-  std::vector<T> _container;
+  std::vector<double> _container;
   
 };
 

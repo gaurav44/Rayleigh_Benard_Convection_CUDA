@@ -1,34 +1,12 @@
 #include "Simulation.hpp"
 
-//__global__ void temperature_kernel(thrust::device_vector<double> T_old,
-//                                   thrust::device_vector<double> T,
-//                                   thrust::device_vector<double> U,
-//                                   thrust::device_vector<double> V,
-//                                   double alpha,
-//                                   double dt,
-//                                   double imax,
-//                                   double jmax) {
-//    int i = blockIdx.x * blockDim.x + threadIdx.x;
-//    int j = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//    if(i >= 1 && i < imax + 1 && j >=1 && j < jmax + 1) {
-//        T[(imax + 2) * j + i] = T_old[(imax + 2) * j + i] + dt * alpha;
-//    }
-//};
-
-void Simulation::calculate_temperature(const Matrix<double>& U,
-                                       const Matrix<double>& V,
-                                       Matrix<double>& T,
+void Simulation::calculate_temperature(const Matrix& U,
+                                       const Matrix& V,
+                                       Matrix& T,
                                        const Domain& domain) {
-    Matrix<double> T_old = T;
+    Matrix T_old = T;
 
-  //  dim3 threadsPerBlock(16, 16);
-  //  dim3 numBlocks((domain.imax + threadsPerBlock.x - 1) / threadsPerBlock.x,
-  //                 (domain.jmax + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-//    temperature_kernel<<<numBlocks, threadsPerBlock>>>(T_old.d_container, T.d_container, U.d_container, V.d_container, domain.alpha, domain.dt, domain.imax, domain.jmax);
-
-     for (int i = 1; i < domain.imax+1; i++) {
+    for (int i = 1; i < domain.imax+1; i++) {
          for(int j = 1; j < domain.jmax+1; j++) {
              T(i, j) =
                  T_old(i, j) + domain.dt * (domain.alpha * Discretization::diffusion(T_old, domain, i, j) -
@@ -38,11 +16,11 @@ void Simulation::calculate_temperature(const Matrix<double>& U,
 
 }
 
-void Simulation::calculate_fluxes(const Matrix<double>& U,
-                                  const Matrix<double>& V,
-                                  const Matrix<double>& T,
-                                  Matrix<double>& F,
-                                  Matrix<double>& G,
+void Simulation::calculate_fluxes(const Matrix& U,
+                                  const Matrix& V,
+                                  const Matrix& T,
+                                  Matrix& F,
+                                  Matrix& G,
                                   const Domain& domain) {
     for(int i = 1; i < domain.imax; i++){
         for(int j = 1; j < domain.jmax+1; j++) {
@@ -61,9 +39,9 @@ void Simulation::calculate_fluxes(const Matrix<double>& U,
     } 
 }
 
-void Simulation::calculate_rs(const Matrix<double>& F, 
-                              const Matrix<double>& G,
-                              Matrix<double>& RS,
+void Simulation::calculate_rs(const Matrix& F, 
+                              const Matrix& G,
+                              Matrix& RS,
                               const Domain& domain) {
     for (int i = 1; i < domain.imax+1; i++) {
         for(int j = 1; j < domain.jmax+1; j++) {
@@ -74,11 +52,11 @@ void Simulation::calculate_rs(const Matrix<double>& F,
     }
 }
 
-void Simulation::calculate_velocities(Matrix<double>& U,
-                                      Matrix<double>& V,
-                                      const Matrix<double>& F,
-                                      const Matrix<double>& G,
-                                      const Matrix<double>& P,
+void Simulation::calculate_velocities(Matrix& U,
+                                      Matrix& V,
+                                      const Matrix& F,
+                                      const Matrix& G,
+                                      const Matrix& P,
                                       const Domain& domain) {
     for (int i = 1; i < domain.imax; i++) {
         for(int j = 1; j < domain.jmax+1; j++) {

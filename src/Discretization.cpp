@@ -1,7 +1,7 @@
 #include "Discretization.hpp"
 
-double Discretization::convection_u(const Matrix<double> &U,
-                                    const Matrix<double> &V,
+double Discretization::convection_u(const Matrix &U,
+                                    const Matrix &V,
                                     const Domain& domain,
                                     int i, int j) {
 
@@ -18,8 +18,8 @@ double Discretization::convection_u(const Matrix<double> &U,
 
 }
 
-double Discretization::convection_v(const Matrix<double> &U,
-                                    const Matrix<double> &V,
+double Discretization::convection_v(const Matrix &U,
+                                    const Matrix &V,
                                     const Domain& domain,
                                     int i, int j) {
             double term1 =
@@ -40,9 +40,9 @@ double Discretization::convection_v(const Matrix<double> &U,
             return term1 + term2;
 }
 
- double Discretization::convection_T(const Matrix<double> &U,
-                                    const Matrix<double> &V,
-                                    const Matrix<double> &T,
+ double Discretization::convection_T(const Matrix &U,
+                                    const Matrix &V,
+                                    const Matrix &T,
                                     const Domain& domain,
                                     int i, int j) {
             double term1 =
@@ -60,7 +60,7 @@ double Discretization::convection_v(const Matrix<double> &U,
             return term1 + term2;
 };
 
- double Discretization::diffusion(const Matrix<double> &A,
+ double Discretization::diffusion(const Matrix &A,
                                             const Domain& domain,
                                             int i, int j) {
     double term1 = (A(i + 1, j) - 2 * A(i, j) + A(i - 1, j)) / (domain.dx * domain.dx);
@@ -69,7 +69,7 @@ double Discretization::convection_v(const Matrix<double> &U,
     return term1 + term2;
 }
 
-double Discretization::laplacian(const Matrix<double> &P,
+double Discretization::laplacian(const Matrix &P,
                                  const Domain& domain,
                                  int i, int j) {
     double result = (P(i + 1, j) - 2.0 * P(i, j) + P(i - 1, j)) / (domain.dx * domain.dx) +
@@ -78,7 +78,7 @@ double Discretization::laplacian(const Matrix<double> &P,
     return result;
 }
 
-double Discretization::sor_helper(const Matrix<double> &P,
+double Discretization::sor_helper(const Matrix &P,
                                   const Domain& domain,
                                   int i, int j) {
     double result = (P(i + 1, j) + P(i - 1, j)) / (domain.dx * domain.dx) +
@@ -87,7 +87,7 @@ double Discretization::sor_helper(const Matrix<double> &P,
     return result;
 }
 
-double Discretization::interpolate(const Matrix<double> &A,
+double Discretization::interpolate(const Matrix &A,
                                    int i, int j,
                                    int i_offset, int j_offset) {
     return (A(i, j) + A(i + i_offset, j + j_offset)) / 2;
