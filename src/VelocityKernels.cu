@@ -1,6 +1,6 @@
 #include "Simulation.hpp"
-#include "thrust/device_vector.h"
 #include "cuda_utils.hpp"
+#include "thrust/device_vector.h"
 
 __global__ void U_kernel_call(double *U, const double *F, const double *P,
                               double dx, int imax, double jmax, double dt) {
@@ -14,13 +14,50 @@ __global__ void U_kernel_call(double *U, const double *F, const double *P,
   }
 }
 
+__global__ void U_kernelShared_call(double *U, const double *F, const double *P,
+                                    double dx, int imax, double jmax,
+                                    double dt) {
+  // indices offset by 1 to account for halos
+  int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
+  int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
+
+  int global_idx = j * imax + i;
+  extern __shared__ double buffer[];
+  double *shared_P = &buffer[0];
+
+  int local_i = threadIdx.x + 1;
+  int local_j = threadIdx.y + 1;
+  int local_idx = local_j * (blockDim.x + 2) + local_i;
+
+  // load the central part into shared memory
+  if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
+      local_j < blockDim.y + 1) {
+    shared_P[local_idx] = P[global_idx];
+  }
+
+  // Right Halo
+  if (threadIdx.x == blockDim.x - 1 && i < imax - 1) {
+    shared_P[local_idx + 1] = P[global_idx + 1];
+  }
+
+  __syncthreads();
+
+  if (i < imax - 2 && j < jmax - 1) {
+    U[global_idx] = F[global_idx] -
+                    dt * (shared_P[local_idx + 1] - shared_P[local_idx]) / dx;
+  }
+}
+
 void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
               const Domain &domain) {
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  U_kernel_call<<<numBlocks, threadsPerBlock>>>(
+  size_t shared_mem =
+      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
+
+  U_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dx,
@@ -42,13 +79,48 @@ __global__ void V_kernel_call(double *V, const double *G, const double *P,
   }
 }
 
+__global__ void V_kernelShared_call(double *V, const double *G, const double *P,
+                                    double dy, int imax, double jmax,
+                                    double dt) {
+  // indices offset by 1 to account for halos
+  int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
+  int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
+
+  int global_idx = j * imax + i;
+  extern __shared__ double buffer[];
+  double *shared_P = &buffer[0];
+
+  int local_i = threadIdx.x + 1;
+  int local_j = threadIdx.y + 1;
+  int local_idx = local_j * (blockDim.x + 2) + local_i;
+
+  // load the central part into shared memory
+  if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
+      local_j < blockDim.y + 1) {
+    shared_P[local_idx] = P[global_idx];
+  }
+
+  // Top Halo
+  if (threadIdx.y == blockDim.y - 1 && j < jmax - 1) {
+    shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
+  }
+
+  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 2) {
+    V[global_idx] = G[global_idx] -
+                    dt * (P[local_idx + blockDim.x + 2] - P[local_idx]) / dy;
+  }
+}
+
 void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
               const Domain &domain) {
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  V_kernel_call<<<numBlocks, threadsPerBlock>>>(
+  size_t shared_mem =
+      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
+
+  V_kernel_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dy,

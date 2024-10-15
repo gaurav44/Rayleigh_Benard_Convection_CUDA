@@ -33,7 +33,6 @@ __global__ void F_kernelShared_call(const double *U, const double *V,
   double *shared_U = &buffer[0];
   double *shared_V = &buffer[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
   double *shared_T = &buffer[2 * (BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
-  double *shared_F = &buffer[3 * (BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -45,15 +44,12 @@ __global__ void F_kernelShared_call(const double *U, const double *V,
     shared_U[local_idx] = U[global_idx];
     shared_V[local_idx] = V[global_idx];
     shared_T[local_idx] = T[global_idx];
-    shared_F[local_idx] = F[global_idx];
   }
 
   // Left Halo
   if (threadIdx.x == 0 && i > 0) {
     shared_U[local_idx - 1] = U[global_idx - 1];
     shared_V[local_idx - 1] = V[global_idx - 1];
-    shared_T[local_idx - 1] = T[global_idx - 1];
-    shared_F[local_idx - 1] = F[global_idx - 1];
   }
 
   // Right Halo
@@ -61,37 +57,31 @@ __global__ void F_kernelShared_call(const double *U, const double *V,
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
     shared_T[local_idx + 1] = T[global_idx + 1];
-    shared_F[local_idx + 1] = F[global_idx + 1];
   }
 
   // Bottom Halo
   if (threadIdx.y == 0 && j > 0) {
     shared_U[local_idx - blockDim.x - 2] = U[global_idx - imax];
     shared_V[local_idx - blockDim.x - 2] = V[global_idx - imax];
-    shared_T[local_idx - blockDim.x - 2] = T[global_idx - imax];
-    shared_F[local_idx - blockDim.x - 2] = F[global_idx - imax];
+    shared_V[local_idx - blockDim.x - 2 + 1] = V[global_idx - imax + 1];
   }
 
   // Top Halo
   if (threadIdx.y == blockDim.y - 1 && j < jmax - 1) {
     shared_U[local_idx + blockDim.x + 2] = U[global_idx + imax];
     shared_V[local_idx + blockDim.x + 2] = V[global_idx + imax];
-    shared_T[local_idx + blockDim.x + 2] = T[global_idx + imax];
-    shared_F[local_idx + blockDim.x + 2] = F[global_idx + imax];
   }
 
   __syncthreads();
 
   if (i > 0 && j > 0 && i < imax - 2 && j < jmax - 1) {
-    // int idx = imax * j + i;
-    // int idxRight = imax * j + i + 1;
-    shared_F[local_idx] =
+    F[global_idx] =
         shared_U[local_idx] +
         dt * (nu * Discretization::diffusionSharedMem(shared_U, local_i,
                                                       local_j, blockDim.x + 2) -
-              Discretization::convection_u(U, V, i, j)) -
+              Discretization::convection_uSharedMem(shared_U, shared_V, local_i,
+                                                    local_j, blockDim.x + 2)) -
         (beta * dt / 2 * (shared_T[local_idx] + shared_T[local_idx + 1])) * GX;
-    F[global_idx] = shared_F[local_idx];
   }
 }
 
@@ -102,7 +92,7 @@ void F_kernel(const Matrix &U, const Matrix &V, const Matrix &T, Matrix &F,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
   size_t shared_mem =
-      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 4 * sizeof(double);
+      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 3 * sizeof(double);
 
   F_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
