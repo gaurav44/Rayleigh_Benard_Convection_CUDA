@@ -21,6 +21,7 @@ int main() {
   Simulation sim(&fields, &domain);
   sim.copyAllToDevice();
   Boundary boundary(&fields, &domain, 294.78, 291.20); // T_hot, T_cold -> for the top and bottom boundaries
+  PressureSolver presSolver;
 
   boundary.apply_boundaries();
   boundary.apply_pressure();
@@ -50,7 +51,7 @@ int main() {
       }
       boundary.apply_pressure();
 
-      res = PressureSolver::calculate_pressure(sim.getP(), sim.getRS(), domain);
+      res = presSolver.calculate_pressure(sim.getP(), sim.getRS(), domain);
       iter++;
     }
     sim.calculate_velocities();

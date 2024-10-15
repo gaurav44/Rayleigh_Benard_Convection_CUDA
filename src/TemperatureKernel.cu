@@ -22,10 +22,8 @@ __global__ void temperature_kernel_call(const double *U, const double *V,
 }
 
 __global__ void temperature_kernelShared_call(const double *U, const double *V,
-                                              double *T, double dx, double dy,
-                                              int imax, double jmax,
-                                              double gamma, double alpha,
-                                              double dt) {
+                                              double *T, int imax, double jmax,
+                                              double alpha, double dt) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -110,9 +108,8 @@ void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
   temperature_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
-      thrust::raw_pointer_cast(T.d_container.data()),
-      domain.dx, domain.dy,
-      domain.imax + 2, domain.jmax + 2, domain.gamma, domain.alpha, domain.dt);
+      thrust::raw_pointer_cast(T.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, domain.alpha, domain.dt);
 
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();

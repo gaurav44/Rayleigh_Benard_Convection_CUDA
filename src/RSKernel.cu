@@ -4,7 +4,7 @@
 
 __global__ void RS_kernel_call(const double *F, const double *G, double *RS,
                                double dx, double dy, int imax, double jmax,
-                               double nu, double dt) {
+                               double dt) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -29,7 +29,7 @@ void RS_kernel(const Matrix &F, const Matrix &G, Matrix &RS,
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain.dx, domain.dy,
-      domain.imax + 2, domain.jmax + 2, domain.nu, domain.dt);
+      domain.imax + 2, domain.jmax + 2, domain.dt);
   CHECK(cudaGetLastError());
-  //cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 }

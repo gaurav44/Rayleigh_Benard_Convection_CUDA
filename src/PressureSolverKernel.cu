@@ -18,9 +18,9 @@ __global__ void SOR_kernel_call(double *P, const double *RS, double dx,
   }
 }
 
-__global__ void SOR_kernelShared_call(double *P, const double *RS, double dx,
-                                      double dy, int imax, double jmax,
-                                      double omg, int color) {
+__global__ void SOR_kernelShared_call(double *P, const double *RS, int imax,
+                                      double jmax, double omg, double coeff,
+                                      int color) {
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
@@ -33,7 +33,7 @@ __global__ void SOR_kernelShared_call(double *P, const double *RS, double dx,
   int local_j = threadIdx.y + 1;
   int local_idx = local_j * (blockDim.x + 2) + local_i;
 
-  double coeff = omg / (2.0 * (1.0 / (dx * dx) + 1.0 / (dy * dy)));
+ // double coeff = omg / (2.0 * (1.0 / (dx * dx) + 1.0 / (dy * dy)));
 
   // load the central part into shared memory
   if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
@@ -103,40 +103,46 @@ __global__ void Residual_kernelShared_call(const double *P, const double *RS,
 }
 
 double PressureSolver_kernel(Matrix &P, const Matrix &RS, const Domain &domain,
-                             double omg) {
+                             double omg, double *d_rloc) {
   dim3 threadsPerBlock(16, 16);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-  double *d_P = thrust::raw_pointer_cast(P.d_container.data());
-  const double *d_RS = thrust::raw_pointer_cast(RS.d_container.data());
+  
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 4 * sizeof(double);
+
+  double coeff = omg / (2.0 * (1.0 / (domain.dx * domain.dx) + 1.0 / (domain.dy * domain.dy)));
+ 
+
   SOR_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
-      d_P, d_RS, domain.dx, domain.dy, domain.imax + 2, domain.jmax + 2, omg,
-      0);
+      thrust::raw_pointer_cast(P.d_container.data()),
+      thrust::raw_pointer_cast(RS.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, omg, coeff, 0);
 
   CHECK(cudaGetLastError());
 
   SOR_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
-      d_P, d_RS, domain.dx, domain.dy, domain.imax + 2, domain.jmax + 2, omg,
-      1);
+      thrust::raw_pointer_cast(P.d_container.data()),
+      thrust::raw_pointer_cast(RS.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, omg, coeff, 1);
   CHECK(cudaGetLastError());
 
   double res = 0.0;
-  double *d_rloc;
+  // double *d_rloc;
   double h_rloc = 0.0;
-  CHECK(cudaMalloc(&d_rloc, sizeof(double)));
+  // CHECK(cudaMalloc(&d_rloc, sizeof(double)));
   CHECK(cudaMemcpy(d_rloc, &h_rloc, sizeof(double), cudaMemcpyHostToDevice));
 
   Residual_kernel_call<<<numBlocks, threadsPerBlock>>>(
-      d_P, d_RS, domain.imax + 2, domain.jmax + 2, d_rloc);
+      thrust::raw_pointer_cast(P.d_container.data()),
+      thrust::raw_pointer_cast(RS.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, d_rloc);
 
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
   CHECK(cudaMemcpy(&h_rloc, d_rloc, sizeof(double), cudaMemcpyDeviceToHost));
   res = h_rloc / (domain.imax * domain.jmax);
   res = std::sqrt(res);
-  CHECK(cudaFree(d_rloc));
+  // CHECK(cudaFree(d_rloc));
   return res;
 }
