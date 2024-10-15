@@ -2,7 +2,18 @@
 #include "Domain.hpp"
 
 Simulation::Simulation(Fields *fields, Domain *domain)
-    : _fields(fields), _domain(domain) {}
+    : _fields(fields), _domain(domain) {
+  dim3 threadsPerBlock(32, 32);
+  dim3 numBlocks(
+      (_domain->imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
+      (_domain->jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+  CHECK(cudaMalloc(&d_u_block_max, numBlocks.x * numBlocks.y * sizeof(double)));
+  CHECK(cudaMalloc(&d_v_block_max, numBlocks.x * numBlocks.y * sizeof(double)));
+
+  h_u_block_max = new double[numBlocks.x * numBlocks.y];
+  h_v_block_max = new double[numBlocks.x * numBlocks.y];
+}
 
 void Simulation::calculate_dt() {
   double CFLu = 0.0;
@@ -13,7 +24,9 @@ void Simulation::calculate_dt() {
   double dx2 = _domain->dx * _domain->dx;
   double dy2 = _domain->dy * _domain->dy;
 
-  auto [u_max, v_max] = Dt_kernel(_fields->U, _fields->V, *_domain);
+  auto [u_max, v_max] =
+      Dt_kernel(_fields->U, _fields->V, *_domain, d_u_block_max, d_v_block_max,
+                h_u_block_max, h_v_block_max);
 
   CFLu = _domain->dx / u_max;
   CFLv = _domain->dy / v_max;
@@ -43,4 +56,11 @@ void Simulation::calculate_rs() {
 void Simulation::calculate_velocities() {
   U_kernel(_fields->U, _fields->F, _fields->P, *_domain);
   V_kernel(_fields->V, _fields->G, _fields->P, *_domain);
+}
+
+Simulation::~Simulation() {
+  CHECK(cudaFree(d_u_block_max));
+  CHECK(cudaFree(d_v_block_max));
+  free(h_u_block_max);
+  free(h_v_block_max);
 }

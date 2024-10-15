@@ -5,10 +5,13 @@
 #include "Domain.hpp"
 #include "Fields.hpp"
 #include <cmath>
+#include "cuda_utils.hpp"
+#include <thrust/device_vector.h>
 
 class Simulation {
 public:
   Simulation(Fields* fields, Domain* domain);
+  ~Simulation();
   void calculate_dt();
 
   void calculate_temperature();
@@ -32,8 +35,12 @@ public:
   //Fields &getFields() { return _fields; }
   Fields* _fields;
   Domain* _domain;
+  double* h_u_block_max;
+  double* h_v_block_max;
+  double* d_u_block_max;
+  double* d_v_block_max;
 };
-extern void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
+extern void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T, 
                                const Domain &domain);
 extern void F_kernel(const Matrix &U, const Matrix &V, const Matrix &T,
                      Matrix &F, const Domain &domain);
@@ -46,4 +53,5 @@ extern void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
 extern void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
                      const Domain &domain);
 extern std::pair<double, double> Dt_kernel(const Matrix &U, const Matrix &V,
-                                           const Domain &domain);
+                                           const Domain &domain, double* d_u_block_max, double* d_v_block_max,
+                                           double* h_u_block_max, double* h_v_block_max);

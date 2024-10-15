@@ -46,6 +46,7 @@ set(SOURCES_CU
     src/PressureSolverKernel.cu
     src/VelocityKernels.cu
     src/DtKernel.cu
+    #src/Simulation.cu
 )
 
 add_executable(main ${SOURCES_CPP} ${SOURCES_CU})

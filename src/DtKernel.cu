@@ -65,49 +65,36 @@ __global__ void VMax_kernel_call(const double *V, int imax, double jmax,
 }
 
 std::pair<double, double> Dt_kernel(const Matrix &U, const Matrix &V,
-                                    const Domain &domain) {
-  dim3 threadsPerBlock(16, 16);
+                                    const Domain &domain, double* d_u_block_max, double* d_v_block_max,
+                                    double* h_u_block_max, double* h_v_block_max) {
+  dim3 threadsPerBlock(32, 32);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
   double h_u_max = 0.0;
   double h_v_max = 0.0;
 
-  double *d_u_block_results;
-  double *d_v_block_results;
-
-  CHECK(cudaMalloc(&d_u_block_results, numBlocks.x * numBlocks.y * sizeof(double)));
-  CHECK(cudaMalloc(&d_v_block_results, numBlocks.x * numBlocks.y * sizeof(double)));
-
-  UMax_kernel_call<<<numBlocks, threadsPerBlock, 256 * sizeof(double)>>>(
+  UMax_kernel_call<<<numBlocks, threadsPerBlock, 1024 * sizeof(double)>>>(
       thrust::raw_pointer_cast(U.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, d_u_block_results);
+      domain.jmax + 2, d_u_block_max);
   CHECK(cudaGetLastError());
 
-  VMax_kernel_call<<<numBlocks, threadsPerBlock, 256 * sizeof(double)>>>(
+  VMax_kernel_call<<<numBlocks, threadsPerBlock, 1024 * sizeof(double)>>>(
       thrust::raw_pointer_cast(V.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, d_v_block_results);
+      domain.jmax + 2, d_v_block_max);
   CHECK(cudaGetLastError());
 
-  CHECK(cudaDeviceSynchronize());
-
-  double *h_umax_results = new double[numBlocks.x * numBlocks.y];
-  double *h_vmax_results = new double[numBlocks.x * numBlocks.y];
-  CHECK(cudaMemcpy(h_umax_results, d_u_block_results,
+  CHECK(cudaMemcpy(h_u_block_max, d_u_block_max,
              numBlocks.x * numBlocks.y * sizeof(double),
              cudaMemcpyDeviceToHost));
-  CHECK(cudaMemcpy(h_vmax_results, d_v_block_results,
+  CHECK(cudaMemcpy(h_v_block_max, d_v_block_max,
              numBlocks.x * numBlocks.y * sizeof(double),
              cudaMemcpyDeviceToHost));
-  CHECK(cudaFree(d_u_block_results));
-  CHECK(cudaFree(d_v_block_results));
 
   // Find the maximum in the result array
   for (int i = 0; i < numBlocks.x * numBlocks.y; ++i) {
-    h_u_max = fmax(h_u_max, h_umax_results[i]);
-    h_v_max = fmax(h_v_max, h_vmax_results[i]);
+    h_u_max = fmax(h_u_max, h_u_block_max[i]);
+    h_v_max = fmax(h_v_max, h_v_block_max[i]);
   }
-  free(h_umax_results);
-  free(h_vmax_results);
   return {h_u_max, h_v_max};
 }

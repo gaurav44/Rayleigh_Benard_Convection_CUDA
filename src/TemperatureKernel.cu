@@ -22,7 +22,7 @@ __global__ void temperature_kernel_call(const double *U, const double *V,
 }
 
 __global__ void temperature_kernelShared_call(const double *U, const double *V,
-                                              double *T, const double *T_old,
+                                              double *T, double *T_old,
                                               double dx, double dy, int imax,
                                               double jmax, double gamma,
                                               double alpha, double dt) {
@@ -92,10 +92,11 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
                           shared_Told, local_i, local_j, blockDim.x + 2) -
               Discretization::convection_TSharedMem(shared_U, shared_V, shared_Told, local_i, local_j, blockDim.x+2));
     T[global_idx] = shared_T[local_idx];
+    //T_old[global_idx] = shared_T[local_idx];
   }
 }
 
-void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
+void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T, 
                         const Domain &domain) {
 
   dim3 threadsPerBlock(16, 16);
