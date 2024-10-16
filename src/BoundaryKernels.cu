@@ -53,20 +53,32 @@ __global__ void BoundaryTB_kernel_call(double *U, double *V, double *F,
   }
 }
 
-void Boundary_kernel(Fields &fields, const Domain &domain, double Th,
-                     double Tc) {
-  dim3 threadsPerBlock(256);
+void Boundary_kernel(Fields &fields, const Domain &domain, double Th, double Tc,
+                     cudaStream_t streamLR,cudaStream_t streamTB, cudaEvent_t eventLR,
+                     cudaEvent_t eventTB) {
+  dim3 threadsPerBlock(1024);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
-  BoundaryLR_kernel_call<<<numBlocks, threadsPerBlock>>>(
+  //cudaStream_t streamLR;
+  //cudaStream_t streamTB;
+  //CHECK(cudaStreamCreate(&streamLR));
+  //CHECK(cudaStreamCreate(&streamTB));
+
+  //cudaEvent_t eventLR, eventTB;
+  //CHECK(cudaEventCreate(&eventLR));
+  //CHECK(cudaEventCreate(&eventTB));
+
+  BoundaryLR_kernel_call<<<numBlocks, threadsPerBlock, 0, streamLR>>>(
       thrust::raw_pointer_cast(fields.U.d_container.data()),
       thrust::raw_pointer_cast(fields.V.d_container.data()),
       thrust::raw_pointer_cast(fields.F.d_container.data()),
       thrust::raw_pointer_cast(fields.G.d_container.data()),
       thrust::raw_pointer_cast(fields.T.d_container.data()), domain.imax + 2,
       domain.jmax + 2);
+  CHECK(cudaGetLastError());
+  CHECK(cudaEventRecord(eventLR, streamLR));
 
-  BoundaryTB_kernel_call<<<numBlocks, threadsPerBlock>>>(
+  BoundaryTB_kernel_call<<<numBlocks, threadsPerBlock, 0, streamTB>>>(
       thrust::raw_pointer_cast(fields.U.d_container.data()),
       thrust::raw_pointer_cast(fields.V.d_container.data()),
       thrust::raw_pointer_cast(fields.F.d_container.data()),
@@ -74,7 +86,16 @@ void Boundary_kernel(Fields &fields, const Domain &domain, double Th,
       thrust::raw_pointer_cast(fields.T.d_container.data()), domain.imax + 2,
       domain.jmax + 2, Th, Tc);
   CHECK(cudaGetLastError());
-  //cudaDeviceSynchronize();
+  CHECK(cudaEventRecord(eventTB, streamTB));
+
+  CHECK(cudaStreamWaitEvent(0, eventLR, 0));
+  CHECK(cudaStreamWaitEvent(0, eventTB, 0));
+
+  //CHECK(cudaStreamDestroy(streamTB));
+  //CHECK(cudaStreamDestroy(streamLR));
+  //CHECK(cudaEventDestroy(eventTB));
+  //CHECK(cudaEventDestroy(eventLR));
+  // cudaDeviceSynchronize();
 }
 
 __global__ void BoundaryP_kernel_call(double *P, int imax, int jmax) {
@@ -114,5 +135,5 @@ void BoundaryP_kernel(Matrix &p, const Domain &domain) {
       thrust::raw_pointer_cast(p.d_container.data()), domain.imax + 2,
       domain.jmax + 2);
   CHECK(cudaGetLastError());
-  //cudaDeviceSynchronize();
+  // cudaDeviceSynchronize();
 }
