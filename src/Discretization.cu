@@ -209,6 +209,20 @@ __device__ double Discretization::laplacian(const double *P, int i, int j) {
   return result;
 }
 
+__device__ double Discretization::laplacianSharedMem(const double *P, int i, int j, int imax) {
+  int idx = imax * j + i;
+  int idx_right = imax * j + i + 1;
+  int idx_left = imax * j + i - 1;
+  int idx_top = imax * (j + 1) + i;
+  int idx_bottom = imax * (j - 1) + i;
+
+  double result = (P[idx_right] - 2.0 * P[idx] + P[idx_left]) / (_dx * _dx) +
+                  (P[idx_top] - 2.0 * P[idx] + P[idx_bottom]) / (_dy * _dy);
+
+  return result;
+}
+
+
 __device__ double Discretization::sor_helper(const double *P, int i, int j) {
   // int idx = _imax * j + i;
   int idx_right = _imax * j + i + 1;

@@ -95,7 +95,7 @@ void G_kernel(const Matrix &U, const Matrix &V, const Matrix &T, Matrix &G,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 3 * sizeof(double);
 
-  G_kernel_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  G_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(T.d_container.data()),

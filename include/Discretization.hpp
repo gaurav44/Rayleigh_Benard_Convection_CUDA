@@ -36,6 +36,7 @@ public:
 
   // Calculating the laplacian part of the equation
   __device__ static double laplacian(const double *P, int i, int j);
+  __device__ static double laplacianSharedMem(const double *P, int i, int j, int imax);
 
   // Calculating the SOR Helper
   __device__ static double sor_helper(const double *P, int i, int j);
