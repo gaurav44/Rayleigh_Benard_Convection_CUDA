@@ -3,20 +3,20 @@
 
 #define BLOCK_SIZE 16
 
-__global__ void SOR_kernel_call(double *P, const double *RS, double dx,
-                                double dy, int imax, double jmax, double omg,
-                                int color) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  double coeff = omg / (2.0 * (1.0 / (dx * dx) + 1.0 / (dy * dy)));
-
-  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1 && (i + j) % 2 == color) {
-    int idx = imax * j + i;
-    P[idx] = (1.0 - omg) * P[idx] +
-             coeff * (Discretization::sor_helper(P, i, j) - RS[idx]);
-  }
-}
+//__global__ void SOR_kernel_call(double *P, const double *RS, double dx,
+//                                double dy, int imax, double jmax, double omg,
+//                                int color) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  double coeff = omg / (2.0 * (1.0 / (dx * dx) + 1.0 / (dy * dy)));
+//
+//  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1 && (i + j) % 2 == color) {
+//    int idx = imax * j + i;
+//    P[idx] = (1.0 - omg) * P[idx] +
+//             coeff * (Discretization::sor_helper(P, i, j) - RS[idx]);
+//  }
+//}
 
 __global__ void SOR_kernelShared_call(double *P, const double *RS, int imax,
                                       double jmax, double omg, double coeff,
@@ -67,17 +67,17 @@ __global__ void SOR_kernelShared_call(double *P, const double *RS, int imax,
   }
 }
 
-__global__ void Residual_kernel_call(const double *P, const double *RS,
-                                     int imax, double jmax, double *residual) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
-    int idx = imax * j + i;
-    double val = Discretization::laplacian(P, i, j) - RS[idx];
-    atomicAdd(residual, (val * val));
-  }
-}
+//__global__ void Residual_kernel_call(const double *P, const double *RS,
+//                                     int imax, double jmax, double *residual) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+//    int idx = imax * j + i;
+//    double val = Discretization::laplacian(P, i, j) - RS[idx];
+//    atomicAdd(residual, (val * val));
+//  }
+//}
 
 __global__ void Residual_kernelShared_call(const double *P, const double *RS,
                                            int imax, double jmax,

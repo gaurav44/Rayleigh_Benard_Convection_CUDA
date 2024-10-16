@@ -4,21 +4,21 @@
 
 #define BLOCK_SIZE 16
 
-__global__ void F_kernel_call(const double *U, const double *V, const double *T,
-                              double *F, int imax, int jmax, double nu,
-                              double dt, double GX, double beta) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i > 0 && j > 0 && i < imax - 2 && j < jmax - 1) {
-    int idx = imax * j + i;
-    int idxRight = imax * j + i + 1;
-    F[idx] = U[idx] +
-             dt * (nu * Discretization::diffusion(U, i, j) -
-                   Discretization::convection_u(U, V, i, j)) -
-             (beta * dt / 2 * (T[idx] + T[idxRight])) * GX;
-  }
-}
+//__global__ void F_kernel_call(const double *U, const double *V, const double *T,
+//                              double *F, int imax, int jmax, double nu,
+//                              double dt, double GX, double beta) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  if (i > 0 && j > 0 && i < imax - 2 && j < jmax - 1) {
+//    int idx = imax * j + i;
+//    int idxRight = imax * j + i + 1;
+//    F[idx] = U[idx] +
+//             dt * (nu * Discretization::diffusion(U, i, j) -
+//                   Discretization::convection_u(U, V, i, j)) -
+//             (beta * dt / 2 * (T[idx] + T[idxRight])) * GX;
+//  }
+//}
 
 __global__ void F_kernelShared_call(const double *U, const double *V,
                                     const double *T, double *F, int imax,
@@ -81,7 +81,7 @@ __global__ void F_kernelShared_call(const double *U, const double *V,
                                                       local_j, blockDim.x + 2) -
               Discretization::convection_uSharedMem(shared_U, shared_V, local_i,
                                                     local_j, blockDim.x + 2)) -
-        (beta * dt / 2 * (shared_T[local_idx] + shared_T[local_idx + 1])) * GX;
+        (0.5 * beta * dt * (shared_T[local_idx] + shared_T[local_idx + 1])) * GX;
   }
 }
 

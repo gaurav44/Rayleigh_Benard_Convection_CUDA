@@ -5,21 +5,21 @@
 
 #define BLOCK_SIZE 16
 
-__global__ void temperature_kernel_call(const double *U, const double *V,
-                                        double *T, const double *T_old,
-                                        double dx, double dy, int imax,
-                                        double jmax, double gamma, double alpha,
-                                        double dt) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
-    int idx = j * imax + i;
-    T[idx] =
-        T_old[idx] + dt * (alpha * Discretization::diffusion(T_old, i, j) -
-                           Discretization::convection_T(U, V, T_old, i, j));
-  }
-}
+//__global__ void temperature_kernel_call(const double *U, const double *V,
+//                                        double *T, const double *T_old,
+//                                        double dx, double dy, int imax,
+//                                        double jmax, double gamma, double alpha,
+//                                        double dt) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+//    int idx = j * imax + i;
+//    T[idx] =
+//        T_old[idx] + dt * (alpha * Discretization::diffusion(T_old, i, j) -
+//                           Discretization::convection_T(U, V, T_old, i, j));
+//  }
+//}
 
 __global__ void temperature_kernelShared_call(const double *U, const double *V,
                                               double *T, int imax, double jmax,

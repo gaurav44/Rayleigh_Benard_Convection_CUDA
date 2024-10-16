@@ -4,17 +4,17 @@
 
 #define BLOCK_SIZE 16
 
-__global__ void U_kernel_call(double *U, const double *F, const double *P,
-                              double dx, int imax, double jmax, double dt) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i > 0 && j > 0 && i < imax - 2 && j < jmax - 1) {
-    int idx = imax * j + i;
-    int idxRight = imax * j + i + 1;
-    U[idx] = F[idx] - dt * (P[idxRight] - P[idx]) / dx;
-  }
-}
+//__global__ void U_kernel_call(double *U, const double *F, const double *P,
+//                              double dx, int imax, double jmax, double dt) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  if (i > 0 && j > 0 && i < imax - 2 && j < jmax - 1) {
+//    int idx = imax * j + i;
+//    int idxRight = imax * j + i + 1;
+//    U[idx] = F[idx] - dt * (P[idxRight] - P[idx]) / dx;
+//  }
+//}
 
 __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
                                     double dx, int imax, double jmax,
@@ -68,17 +68,17 @@ void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
   // cudaDeviceSynchronize();
 }
 
-__global__ void V_kernel_call(double *V, const double *G, const double *P,
-                              double dy, int imax, double jmax, double dt) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 2) {
-    int idx = imax * j + i;
-    int idxTop = imax * (j + 1) + i;
-    V[idx] = G[idx] - dt * (P[idxTop] - P[idx]) / dy;
-  }
-}
+//__global__ void V_kernel_call(double *V, const double *G, const double *P,
+//                              double dy, int imax, double jmax, double dt) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 2) {
+//    int idx = imax * j + i;
+//    int idxTop = imax * (j + 1) + i;
+//    V[idx] = G[idx] - dt * (P[idxTop] - P[idx]) / dy;
+//  }
+//}
 
 __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
                                     double dy, int imax, double jmax,

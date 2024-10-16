@@ -55,3 +55,5 @@ static __constant__ int _jmax;
 static __constant__ double _dx;
 static __constant__ double _dy;
 static __constant__ double _gamma;
+static __constant__ double _one_dx;
+static __constant__ double _one_dy;

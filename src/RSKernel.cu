@@ -1,25 +1,26 @@
 #include "Simulation.hpp"
 #include "cuda_utils.hpp"
+#include <thread>
 #include <thrust/device_vector.h>
 
 #define BLOCK_SIZE 16
 
-__global__ void RS_kernel_call(const double *F, const double *G, double *RS,
-                               double dx, double dy, int imax, double jmax,
-                               double dt) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
-    int idx = imax * j + i;
-    int idxLeft = imax * j + i - 1;
-    int idxBottom = imax * (j - 1) + i;
-
-    double term1 = (F[idx] - F[idxLeft]) / dx;
-    double term2 = (G[idx] - G[idxBottom]) / dy;
-    RS[idx] = (term1 + term2) / dt;
-  }
-}
+//__global__ void RS_kernel_call(const double *F, const double *G, double *RS,
+//                               double dx, double dy, int imax, double jmax,
+//                               double dt) {
+//  int i = blockIdx.x * blockDim.x + threadIdx.x;
+//  int j = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+//    int idx = imax * j + i;
+//    int idxLeft = imax * j + i - 1;
+//    int idxBottom = imax * (j - 1) + i;
+//
+//    double term1 = (F[idx] - F[idxLeft]) / dx;
+//    double term2 = (G[idx] - G[idxBottom]) / dy;
+//    RS[idx] = (term1 + term2) / dt;
+//  }
+//}
 
 __global__ void RS_kernelShared_call(const double *F, const double *G,
                                      double *RS, double dx, double dy, int imax,
