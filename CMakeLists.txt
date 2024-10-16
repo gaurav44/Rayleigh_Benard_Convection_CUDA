@@ -37,8 +37,9 @@ set(SOURCES_CPP
 set(SOURCES_CU
     src/DataStructure.cu
     src/TemperatureKernel.cu
-    src/FKernel.cu
-    src/GKernel.cu
+    #src/FKernel.cu
+    #src/GKernel.cu
+    src/FandGKernel.cu
     src/RSKernel.cu
     src/BoundaryKernels.cu
     src/Discretization.cu

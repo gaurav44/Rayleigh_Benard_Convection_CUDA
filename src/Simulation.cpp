@@ -13,6 +13,11 @@ Simulation::Simulation(Fields *fields, Domain *domain)
 
   h_u_block_max = new double[numBlocks.x * numBlocks.y];
   h_v_block_max = new double[numBlocks.x * numBlocks.y];
+
+  CHECK(cudaStreamCreate(&streamFU));
+  CHECK(cudaStreamCreate(&streamGV));
+  CHECK(cudaEventCreate(&eventFU));
+  CHECK(cudaEventCreate(&eventGV));
 }
 
 void Simulation::calculate_dt() {
@@ -45,8 +50,10 @@ void Simulation::calculate_temperature() {
 }
 
 void Simulation::calculate_fluxes() {
-  F_kernel(_fields->U, _fields->V, _fields->T, _fields->F, *_domain);
-  G_kernel(_fields->U, _fields->V, _fields->T, _fields->G, *_domain);
+  // F_kernel(_fields->U, _fields->V, _fields->T, _fields->F, *_domain);
+  // G_kernel(_fields->U, _fields->V, _fields->T, _fields->G, *_domain);
+  FandGKernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->T,
+              *_domain, streamFU, streamGV, eventFU, eventGV);
 }
 
 void Simulation::calculate_rs() {
@@ -54,13 +61,18 @@ void Simulation::calculate_rs() {
 }
 
 void Simulation::calculate_velocities() {
-  U_kernel(_fields->U, _fields->F, _fields->P, *_domain);
-  V_kernel(_fields->V, _fields->G, _fields->P, *_domain);
+  //U_kernel(_fields->U, _fields->F, _fields->P, *_domain);
+  //V_kernel(_fields->V, _fields->G, _fields->P, *_domain);
+  UV_kernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->P, *_domain, streamFU, streamGV, eventFU, eventGV);
 }
 
 Simulation::~Simulation() {
   CHECK(cudaFree(d_u_block_max));
   CHECK(cudaFree(d_v_block_max));
+  CHECK(cudaStreamDestroy(streamFU));
+  CHECK(cudaStreamDestroy(streamGV));
+  CHECK(cudaEventDestroy(eventFU));
+  CHECK(cudaEventDestroy(eventGV));
   free(h_u_block_max);
   free(h_v_block_max);
 }

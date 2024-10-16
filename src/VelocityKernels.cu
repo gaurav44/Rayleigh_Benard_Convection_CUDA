@@ -24,7 +24,7 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  __shared__ double shared_P[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];
+  __shared__ double shared_P[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -88,7 +88,8 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  __shared__ double shared_P[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];;
+  __shared__ double shared_P[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
+  ;
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -108,8 +109,9 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   __syncthreads();
 
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 2) {
-    V[global_idx] = G[global_idx] -
-                    dt * (shared_P[local_idx + blockDim.x + 2] - shared_P[local_idx]) / dy;
+    V[global_idx] =
+        G[global_idx] -
+        dt * (shared_P[local_idx + blockDim.x + 2] - shared_P[local_idx]) / dy;
   }
 }
 
@@ -130,4 +132,34 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
 
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
+}
+
+void UV_kernel(Matrix &U, Matrix &V, const Matrix &F, const Matrix &G,
+               const Matrix &P, const Domain &domain, cudaStream_t streamU,
+               cudaStream_t streamV, cudaEvent_t eventU, cudaEvent_t eventV) {
+  dim3 threadsPerBlock(16, 16);
+  dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                 (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+  size_t shared_mem =
+      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
+
+  U_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem, streamU>>>(
+      thrust::raw_pointer_cast(U.d_container.data()),
+      thrust::raw_pointer_cast(F.d_container.data()),
+      thrust::raw_pointer_cast(P.d_container.data()), domain.dx,
+      domain.imax + 2, domain.jmax + 2, domain.dt);
+  CHECK(cudaGetLastError());
+  CHECK(cudaEventRecord(eventU, streamU));
+
+  V_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem, streamV>>>(
+      thrust::raw_pointer_cast(V.d_container.data()),
+      thrust::raw_pointer_cast(G.d_container.data()),
+      thrust::raw_pointer_cast(P.d_container.data()), domain.dy,
+      domain.imax + 2, domain.jmax + 2, domain.dt);
+  CHECK(cudaGetLastError());
+  CHECK(cudaEventRecord(eventU, streamU));
+
+  CHECK(cudaStreamWaitEvent(0, eventU, 0));
+  CHECK(cudaStreamWaitEvent(0, eventV, 0));
 }
