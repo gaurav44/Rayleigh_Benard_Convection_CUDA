@@ -29,10 +29,10 @@ __global__ void F_kernelShared_call(const double *U, const double *V,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  extern __shared__ double buffer[];
-  double *shared_U = &buffer[0];
-  double *shared_V = &buffer[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
-  double *shared_T = &buffer[2 * (BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
+    
+  __shared__ double shared_U[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];
+  __shared__ double shared_V[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];
+  __shared__ double shared_T[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;

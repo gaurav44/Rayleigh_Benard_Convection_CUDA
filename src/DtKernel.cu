@@ -4,12 +4,14 @@
 #include <thrust/device_vector.h>
 #include "cuda_utils.hpp"
 
+#define BLOCK_SIZE 32
+
 __global__ void UMax_kernel_call(const double *U, int imax, double jmax,
                                  double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-  extern __shared__ double shared_data[];
+  __shared__ double shared_data[BLOCK_SIZE*BLOCK_SIZE];
   int shared_index = threadIdx.x * blockDim.y + threadIdx.y;
   shared_data[shared_index] = 0.0;
 
@@ -39,7 +41,7 @@ __global__ void VMax_kernel_call(const double *V, int imax, double jmax,
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-  extern __shared__ double shared_data[];
+  __shared__ double shared_data[BLOCK_SIZE*BLOCK_SIZE];
   int shared_index = threadIdx.x * blockDim.y + threadIdx.y;
   shared_data[shared_index] = 0.0;
 

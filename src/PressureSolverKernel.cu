@@ -25,8 +25,7 @@ __global__ void SOR_kernelShared_call(double *P, const double *RS, int imax,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  extern __shared__ double buffer[];
-  double *shared_P = &buffer[0];
+  __shared__ double shared_P[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;

@@ -2,6 +2,8 @@
 #include "cuda_utils.hpp"
 #include "thrust/device_vector.h"
 
+#define BLOCK_SIZE 16
+
 __global__ void U_kernel_call(double *U, const double *F, const double *P,
                               double dx, int imax, double jmax, double dt) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -22,8 +24,7 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  extern __shared__ double buffer[];
-  double *shared_P = &buffer[0];
+  __shared__ double shared_P[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -87,8 +88,7 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  extern __shared__ double buffer[];
-  double *shared_P = &buffer[0];
+  __shared__ double shared_P[(BLOCK_SIZE+2)*(BLOCK_SIZE+2)];;
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -105,9 +105,11 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
 
+  __syncthreads();
+
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 2) {
     V[global_idx] = G[global_idx] -
-                    dt * (P[local_idx + blockDim.x + 2] - P[local_idx]) / dy;
+                    dt * (shared_P[local_idx + blockDim.x + 2] - shared_P[local_idx]) / dy;
   }
 }
 
@@ -120,7 +122,7 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
 
-  V_kernel_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  V_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dy,
