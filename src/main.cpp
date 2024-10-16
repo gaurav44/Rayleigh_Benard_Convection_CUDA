@@ -21,7 +21,7 @@ int main() {
   Simulation sim(&fields, &domain);
   sim.copyAllToDevice();
   Boundary boundary(&fields, &domain, 294.78, 291.20); // T_hot, T_cold -> for the top and bottom boundaries
-  PressureSolver presSolver;
+  PressureSolver presSolver(&domain);
 
   boundary.apply_boundaries();
   boundary.apply_pressure();

@@ -7,17 +7,17 @@
 
 class PressureSolver {
 public:
-  PressureSolver();
+  PressureSolver(Domain *domain);
 
   ~PressureSolver();
 
-  double calculate_pressure(Matrix &P, const Matrix &RS,
-                                   const Domain &domain);
+  double calculate_pressure(Matrix &P, const Matrix &RS, const Domain &domain);
   static constexpr double eps = 0.00001; // convergence tolerance for SOR
   static const int itermax = 500;        // maximum iterations for SOR
   static constexpr double omg = 1.7;     // relaxation factor for SOR
 
   double *d_rloc;
+  Domain *_domain;
 };
 extern double PressureSolver_kernel(Matrix &P, const Matrix &RS,
                                     const Domain &domain, double omg,
