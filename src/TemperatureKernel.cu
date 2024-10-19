@@ -2,8 +2,9 @@
 #include "cuda_utils.hpp"
 #include <thread>
 #include <thrust/device_vector.h>
+#include "block_sizes.hpp"
 
-#define BLOCK_SIZE 16
+// #define BLOCK_SIZE 16
 
 //__global__ void temperature_kernel_call(const double *U, const double *V,
 //                                        double *T, const double *T_old,
@@ -29,9 +30,9 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  __shared__ double shared_Told[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
-  __shared__ double shared_U[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
-  __shared__ double shared_V[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
+  __shared__ double shared_Told[(BLOCK_SIZE_TEMP + 2) * (BLOCK_SIZE_TEMP + 2)];
+  __shared__ double shared_U[(BLOCK_SIZE_TEMP + 2) * (BLOCK_SIZE_TEMP + 2)];
+  __shared__ double shared_V[(BLOCK_SIZE_TEMP + 2) * (BLOCK_SIZE_TEMP + 2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -89,7 +90,7 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
 void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
                         const Domain &domain) {
 
-  dim3 threadsPerBlock(16, 16);
+  dim3 threadsPerBlock(BLOCK_SIZE_TEMP, BLOCK_SIZE_TEMP);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 

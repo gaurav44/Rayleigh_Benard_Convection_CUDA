@@ -1,5 +1,6 @@
 #include "Boundary.hpp"
 #include "cuda_utils.hpp"
+#include "block_sizes.hpp"
 
 __global__ void BoundaryLR_kernel_call(double *U, double *V, double *F,
                                        double *G, double *T, int imax,
@@ -56,7 +57,7 @@ __global__ void BoundaryTB_kernel_call(double *U, double *V, double *F,
 void Boundary_kernel(Fields &fields, const Domain &domain, double Th, double Tc,
                      cudaStream_t streamLR,cudaStream_t streamTB, cudaEvent_t eventLR,
                      cudaEvent_t eventTB) {
-  dim3 threadsPerBlock(1024);
+  dim3 threadsPerBlock(BLOCK_SIZE_BC);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
   //cudaStream_t streamLR;
@@ -128,7 +129,7 @@ __global__ void BoundaryP_kernel_call(double *P, int imax, int jmax) {
 }
 
 void BoundaryP_kernel(Matrix &p, const Domain &domain) {
-  dim3 threadsPerBlock(256);
+  dim3 threadsPerBlock(BLOCK_SIZE_BC);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
   BoundaryP_kernel_call<<<numBlocks, threadsPerBlock>>>(

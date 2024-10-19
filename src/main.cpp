@@ -7,11 +7,29 @@
 #include "Simulation.hpp"
 #include <iostream>
 #include <unistd.h>
+#include <chrono>
 
 int main() {
   Domain domain;
 
-  domain.readDomainParameters("domain.txt");
+//  domain.readDomainParameters("domain.txt");
+  domain.xlength = 8.5;
+  domain.ylength = 1;
+  domain.nu = 0.0296;                   // Kinematic Viscosity
+  domain.Re = 1 / domain.nu;            // Reynold's number
+  domain.alpha = 0.00000237;            // Thermal diffusivity
+  domain.Pr = domain.nu / domain.alpha; // Prandtl number
+  domain.beta =
+      0.00179; // Coefficient of thermal expansion (used in Boussinesq approx)
+  domain.tau = 0.5;   // Safety factor for timestep
+  domain.gamma = 0.5; // Donor-cell scheme factor (will be used in convection)
+  domain.GX = 0;
+  domain.GY = -9.81; // Gravitational acceleration
+  domain.imax = 85;  // grid points in x
+  domain.jmax = 18;  // grid points in y
+  domain.dx = domain.xlength / domain.imax;
+  domain.dy = domain.ylength / domain.jmax;
+  domain.dt = 0.05; // Timestep
 
   Fields fields(domain.imax + 2, domain.jmax + 2, 293.0);
 
@@ -27,8 +45,9 @@ int main() {
   boundary.apply_pressure();
 
   double t = 0;
-  double t_end = 15000;
+  double t_end = 1000;
   int timestep = 0;
+  auto start = std::chrono::high_resolution_clock::now();
   // Time loop
   while (t < t_end) {
     sim.calculate_dt();
@@ -59,14 +78,19 @@ int main() {
     boundary.apply_boundaries();
 
     if (timestep % 1000 == 0) {
-      if (timestep % 15000 == 0) {
-        sim.getT().copyToHost();
-        sim.getT().printField(timestep);
-      }
+      // if (timestep % 15000 == 0) {
+      //   sim.getT().copyToHost();
+      //   sim.getT().printField(timestep);
+      // }
       std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
                 << " iterations: " << iter << "\n";
     }
     t = t + domain.dt;
     timestep++;
   }
+  // Stop measuring time
+  auto end = std::chrono::high_resolution_clock::now();
+  // Calculate the duration
+  std::chrono::duration<double, std::milli> duration = end - start;
+  std::cout << "Time taken: " << duration.count() << " milliseconds\n";
 }

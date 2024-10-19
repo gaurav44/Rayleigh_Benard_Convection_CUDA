@@ -2,8 +2,9 @@
 #include "cuda_utils.hpp"
 #include <thread>
 #include <thrust/device_vector.h>
+#include "block_sizes.hpp"
 
-#define BLOCK_SIZE 16
+// #define BLOCK_SIZE 16
 
 //__global__ void RS_kernel_call(const double *F, const double *G, double *RS,
 //                               double dx, double dy, int imax, double jmax,
@@ -30,8 +31,8 @@ __global__ void RS_kernelShared_call(const double *F, const double *G,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  __shared__ double shared_F[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
-  __shared__ double shared_G[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
+  __shared__ double shared_F[(BLOCK_SIZE_RS + 2) * (BLOCK_SIZE_RS + 2)];
+  __shared__ double shared_G[(BLOCK_SIZE_RS + 2) * (BLOCK_SIZE_RS + 2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -66,7 +67,7 @@ __global__ void RS_kernelShared_call(const double *F, const double *G,
 
 void RS_kernel(const Matrix &F, const Matrix &G, Matrix &RS,
                const Domain &domain) {
-  dim3 threadsPerBlock(16, 16);
+  dim3 threadsPerBlock(BLOCK_SIZE_RS, BLOCK_SIZE_RS);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 

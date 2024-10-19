@@ -1,8 +1,9 @@
 #include "Simulation.hpp"
 #include "cuda_utils.hpp"
 #include "thrust/device_vector.h"
+#include "block_sizes.hpp"
 
-#define BLOCK_SIZE 16
+// #define BLOCK_SIZE 16
 
 //__global__ void U_kernel_call(double *U, const double *F, const double *P,
 //                              double dx, int imax, double jmax, double dt) {
@@ -24,7 +25,7 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  __shared__ double shared_P[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
+  __shared__ double shared_P[(BLOCK_SIZE_UV + 2) * (BLOCK_SIZE_UV + 2)];
 
   int local_i = threadIdx.x + 1;
   int local_j = threadIdx.y + 1;
@@ -51,7 +52,7 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
 
 void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
               const Domain &domain) {
-  dim3 threadsPerBlock(16, 16);
+  dim3 threadsPerBlock(BLOCK_SIZE_UV, BLOCK_SIZE_UV);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
@@ -88,7 +89,7 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
   int global_idx = j * imax + i;
-  __shared__ double shared_P[(BLOCK_SIZE + 2) * (BLOCK_SIZE + 2)];
+  __shared__ double shared_P[(BLOCK_SIZE_UV + 2) * (BLOCK_SIZE_UV + 2)];
   ;
 
   int local_i = threadIdx.x + 1;
@@ -117,7 +118,7 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
 
 void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
               const Domain &domain) {
-  dim3 threadsPerBlock(16, 16);
+  dim3 threadsPerBlock(BLOCK_SIZE_UV, BLOCK_SIZE_UV);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
@@ -137,7 +138,7 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
 void UV_kernel(Matrix &U, Matrix &V, const Matrix &F, const Matrix &G,
                const Matrix &P, const Domain &domain, cudaStream_t streamU,
                cudaStream_t streamV, cudaEvent_t eventU, cudaEvent_t eventV) {
-  dim3 threadsPerBlock(16, 16);
+  dim3 threadsPerBlock(BLOCK_SIZE_UV, BLOCK_SIZE_UV);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 

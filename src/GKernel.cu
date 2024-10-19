@@ -4,12 +4,12 @@
 
 #define BLOCK_SIZE 16
 
-//__global__ void G_kernel_call(const double *U, const double *V, const double *T,
+// __global__ void G_kernel_call(const double *U, const double *V, const double *T,
 //                              double *G, int imax, double jmax, double nu,
 //                              double dt, double GY, double beta) {
 //  int i = blockIdx.x * blockDim.x + threadIdx.x;
 //  int j = blockIdx.y * blockDim.y + threadIdx.y;
-//
+
 //  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 2) {
 //    int idx = imax * j + i;
 //    int idxTop = imax * (j + 1) + i;
@@ -18,7 +18,7 @@
 //                   Discretization::convection_v(U, V, i, j)) -
 //             (beta * dt / 2 * (T[idx] + T[idxTop])) * GY;
 //  }
-//}
+// }
 
 __global__ void G_kernelShared_call(const double *U, const double *V,
                                     const double *T, double *G, int imax,
