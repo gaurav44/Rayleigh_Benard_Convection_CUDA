@@ -197,23 +197,4 @@ void UV_kernel(Matrix &U, Matrix &V, const Matrix &F, const Matrix &G,
       domain.dx, domain.dy,
       domain.imax + 2, domain.jmax + 2, domain.dt);
   CHECK(cudaGetLastError());
-
-  // U_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem, streamU>>>(
-  //     thrust::raw_pointer_cast(U.d_container.data()),
-  //     thrust::raw_pointer_cast(F.d_container.data()),
-  //     thrust::raw_pointer_cast(P.d_container.data()), domain.dx,
-  //     domain.imax + 2, domain.jmax + 2, domain.dt);
-  // CHECK(cudaGetLastError());
-  // CHECK(cudaEventRecord(eventU, streamU));
-
-  // V_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem, streamV>>>(
-  //     thrust::raw_pointer_cast(V.d_container.data()),
-  //     thrust::raw_pointer_cast(G.d_container.data()),
-  //     thrust::raw_pointer_cast(P.d_container.data()), domain.dy,
-  //     domain.imax + 2, domain.jmax + 2, domain.dt);
-  // CHECK(cudaGetLastError());
-  // CHECK(cudaEventRecord(eventU, streamU));
-
-  // CHECK(cudaStreamWaitEvent(0, eventU, 0));
-  // CHECK(cudaStreamWaitEvent(0, eventV, 0));
 }
