@@ -16,12 +16,14 @@ add_custom_target(copy_compile_commands ALL
 # Definition of the C++ Standard 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS "-O3 -fstrict-aliasing")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstrict-aliasing")
 
 set(CUDA_ARCHITECTURES 61 CACHE STRING "CUDA architectures to compile for")
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 --use_fast_math -maxrregcount=64 -Xptxas -dlcm=ca")
 
 # file(GLOB files src/*.cpp)
 set(SOURCES_CPP

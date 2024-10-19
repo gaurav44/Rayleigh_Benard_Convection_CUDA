@@ -53,7 +53,7 @@ void Simulation::calculate_fluxes() {
   // F_kernel(_fields->U, _fields->V, _fields->T, _fields->F, *_domain);
   // G_kernel(_fields->U, _fields->V, _fields->T, _fields->G, *_domain);
   FandGKernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->T,
-              *_domain, streamFU, streamGV, eventFU, eventGV);
+              *_domain);
 }
 
 void Simulation::calculate_rs() {
@@ -63,7 +63,7 @@ void Simulation::calculate_rs() {
 void Simulation::calculate_velocities() {
   //U_kernel(_fields->U, _fields->F, _fields->P, *_domain);
   //V_kernel(_fields->V, _fields->G, _fields->P, *_domain);
-  UV_kernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->P, *_domain, streamFU, streamGV, eventFU, eventGV);
+  UV_kernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->P, *_domain);
 }
 
 Simulation::~Simulation() {

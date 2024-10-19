@@ -3,6 +3,7 @@
 #include "Domain.hpp"
 #include "thrust/device_vector.h"
 #include <cmath>
+#include "cuda_utils.hpp"
 
 class Discretization {
 
@@ -48,6 +49,14 @@ public:
   __device__ static double interpolateSharedMem(const double *A, int i, int j,
                                        int i_offset, int j_offset, int imax);
 
+  int* idx_left;
+  int* idx_right;
+  int* idx_top;
+  int* idx_bottom;
+  static int* d_idx_left;
+  static int* d_idx_right;
+  static int* d_idx_top;
+  static int* d_idx_bottom;
 };
 // Maybe move this into a global struct of constants
 static __constant__ int _imax;
@@ -57,3 +66,5 @@ static __constant__ double _dy;
 static __constant__ double _gamma;
 static __constant__ double _one_dx;
 static __constant__ double _one_dy;
+
+

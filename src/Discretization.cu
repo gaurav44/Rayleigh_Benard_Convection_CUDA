@@ -44,8 +44,8 @@ __device__ double Discretization::convection_uSharedMem(const double *U,
                                                         int j, int imax) {
 
   int idx = imax * j + i;
-  int idx_right = imax * j + (i + 1);
-  int idx_left = imax * j + (i - 1);
+  int idx_right = idx + 1;//imax * j + (i + 1);
+  int idx_left = idx - 1;//imax * j + (i - 1);
 
   double term1 = _one_dx * (interpolateSharedMem(U, i, j, 1, 0, imax) *
                                 interpolateSharedMem(U, i, j, 1, 0, imax) -
@@ -57,8 +57,8 @@ __device__ double Discretization::convection_uSharedMem(const double *U,
                       fabs(interpolateSharedMem(U, i, j, -1, 0, imax)) *
                           (U[idx_left] - U[idx]) * 0.5);
 
-  int idx_top = imax * (j + 1) + i;
-  int idx_bottom = imax * (j - 1) + i;
+  int idx_top = idx + imax; //imax * (j + 1) + i;
+  int idx_bottom = idx - imax;//imax * (j - 1) + i;
   double term2 = _one_dy * (interpolateSharedMem(V, i, j, 1, 0, imax) *
                                 interpolateSharedMem(U, i, j, 0, 1, imax) -
                             interpolateSharedMem(V, i, j - 1, 1, 0, imax) *
@@ -101,10 +101,10 @@ __device__ double Discretization::convection_vSharedMem(const double *U,
                                                         const double *V, int i,
                                                         int j, int imax) {
   int idx = imax * j + i;
-  int idx_right = imax * j + (i + 1);
-  int idx_left = imax * j + (i - 1);
-  int idx_top = imax * (j + 1) + i;
-  int idx_bottom = imax * (j - 1) + i;
+  int idx_right = idx + 1;//imax * j + (i + 1);
+  int idx_left = idx - 1;//imax * j + (i - 1);
+  int idx_top = idx + imax; //imax * (j + 1) + i;
+  int idx_bottom = idx - imax; //imax * (j - 1) + i;
 
   double term1 = _one_dy * (interpolateSharedMem(V, i, j, 0, 1, imax) *
                                 interpolateSharedMem(V, i, j, 0, 1, imax) -
@@ -155,8 +155,8 @@ __device__ double Discretization::convection_TSharedMem(const double *U,
                                                         const double *T, int i,
                                                         int j, int imax) {
   int idx = imax * j + i;
-  int idx_right = imax * j + (i + 1);
-  int idx_left = imax * j + (i - 1);
+  int idx_right = idx + 1;//imax * j + (i + 1);
+  int idx_left = idx - 1;//imax * j + (i - 1);
   double term1 = 0.5 * _one_dx *
                      (U[idx] * (T[idx] + T[idx_right]) -
                       U[idx_left] * (T[idx_left] + T[idx])) +
@@ -164,8 +164,8 @@ __device__ double Discretization::convection_TSharedMem(const double *U,
                      (fabs(U[idx]) * (T[idx] - T[idx_right]) -
                       fabs(U[idx_left]) * (T[idx_left] - T[idx]));
 
-  int idx_top = imax * (j + 1) + i;
-  int idx_bottom = imax * (j - 1) + i;
+  int idx_top = idx + imax;//imax * (j + 1) + i;
+  int idx_bottom = idx - imax;//imax * (j - 1) + i;
   double term2 = 0.5 * _one_dy *
                      (V[idx] * (T[idx] + T[idx_top]) -
                       V[idx_bottom] * (T[idx_bottom] + T[idx])) +
@@ -191,12 +191,12 @@ __device__ double Discretization::diffusion(const double *A, int i, int j) {
 __device__ double Discretization::diffusionSharedMem(const double *A, int i,
                                                      int j, int imax) {
   int idx = imax * j + i;
-  int idx_right = imax * j + i + 1;
-  int idx_left = imax * j + i - 1;
+  int idx_right = idx + 1;//imax * j + i + 1;
+  int idx_left = idx - 1;//imax * j + i - 1;
   double term1 = (A[idx_right] - 2 * A[idx] + A[idx_left]) * _one_dx * _one_dx;
 
-  int idx_top = imax * (j + 1) + i;
-  int idx_bottom = imax * (j - 1) + i;
+  int idx_top = idx + imax;//imax * (j + 1) + i;
+  int idx_bottom = idx - imax;//imax * (j - 1) + i;
 
   double term2 = (A[idx_top] - 2 * A[idx] + A[idx_bottom]) * _one_dy * _one_dy;
   return term1 + term2;
@@ -218,10 +218,10 @@ __device__ double Discretization::laplacian(const double *P, int i, int j) {
 __device__ double Discretization::laplacianSharedMem(const double *P, int i,
                                                      int j, int imax) {
   int idx = imax * j + i;
-  int idx_right = imax * j + i + 1;
-  int idx_left = imax * j + i - 1;
-  int idx_top = imax * (j + 1) + i;
-  int idx_bottom = imax * (j - 1) + i;
+  int idx_right = idx+1;//imax * j + i + 1;
+  int idx_left = idx-1;//imax * j + i - 1;
+  int idx_top = idx+imax;//imax * (j + 1) + i;
+  int idx_bottom = idx-imax;//imax * (j - 1) + i;
 
   double result =
       (P[idx_right] - 2.0 * P[idx] + P[idx_left]) * _one_dx * _one_dx +
@@ -245,11 +245,11 @@ __device__ double Discretization::sor_helper(const double *P, int i, int j) {
 
 __device__ double Discretization::sor_helperSharedMem(const double *P, int i,
                                                       int j, int imax) {
-  // int idx = _imax * j + i;
-  int idx_right = imax * j + i + 1;
-  int idx_left = imax * j + i - 1;
-  int idx_top = imax * (j + 1) + i;
-  int idx_bottom = imax * (j - 1) + i;
+  int idx = imax * j + i;
+  int idx_right = idx + 1;//imax * j + i + 1;
+  int idx_left = idx -1;//imax * j + i - 1;
+  int idx_top = idx+imax;//imax * (j + 1) + i;
+  int idx_bottom = idx-imax;//imax * (j - 1) + i;
   // double one_dy2 = _one_dy * _one_dy;
   // double one_dx2 = _one_dx * _one_dx;
 
@@ -271,7 +271,7 @@ __device__ double Discretization::interpolateSharedMem(const double *A, int i,
                                                        int j, int i_offset,
                                                        int j_offset, int imax) {
   int idx = imax * j + i;
-  int idxOffset = imax * (j + j_offset) + i + i_offset;
+  int idxOffset = idx + imax*j_offset + i_offset; //imax * (j + j_offset) + i + i_offset;
 
   return 0.5 * (A[idx] + A[idxOffset]);
 }
