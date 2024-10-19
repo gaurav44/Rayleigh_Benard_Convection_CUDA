@@ -5,8 +5,7 @@
 #include "PressureSolver.hpp"
 #include "Simulation.hpp"
 #include <iostream>
-
-#define BLOCK_SIZE = 8;
+#include <chrono>
 
 int main() {
   Domain domain;
@@ -39,7 +38,7 @@ int main() {
   fields.T_old = Matrix(domain.imax + 2, domain.jmax + 2, 293.0);
   fields.RS = Matrix(domain.imax + 2, domain.jmax + 2, 0.0);
 
-  double t_end = 15000;
+  double t_end = 1000;
   double omg = 1.7;     // SOR relaxation factor
   double eps = 0.00001; // Tolerance for SOR
 
@@ -53,6 +52,8 @@ int main() {
   Boundary::apply_pressure(fields.P, domain);
   double t = 0;
   int timestep = 0;
+
+  auto start = std::chrono::high_resolution_clock::now();
   // Time loop
   while (t < t_end) {
     Simulation::calculate_dt(domain, fields);
@@ -66,9 +67,9 @@ int main() {
 
     while (res > eps) {
       if (iter >= itermax) {
-        std::cout << "Pressure solver not converged\n";
-        std::cout << "dt: " << domain.dt << "Time: "
-                  << " residual:" << res << " iterations: " << iter << "\n";
+        // std::cout << "Pressure solver not converged\n";
+        // std::cout << "dt: " << domain.dt << "Time: "
+        //           << " residual:" << res << " iterations: " << iter << "\n";
         break;
       }
       Boundary::apply_pressure(fields.P, domain);
@@ -81,10 +82,15 @@ int main() {
                                      fields.P, domain);
     Boundary::apply_boundaries(fields, domain, Th, Tc);
 
-    if (timestep % 1000 == 0)
-      std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
-                << " iterations: " << iter << "\n";
+    // if (timestep % 1000 == 0)
+    //   std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
+    //             << " iterations: " << iter << "\n";
     t = t + domain.dt;
     timestep++;
   }
+  // Measure execution time
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+
+    std::cout << "Execution time: " << duration.count() << " ms\n";
 }
