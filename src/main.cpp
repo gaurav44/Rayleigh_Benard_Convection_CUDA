@@ -77,14 +77,14 @@ int main() {
 
     boundary.apply_boundaries();
 
-    // if (timestep % 1000 == 0) {
-    //   // if (timestep % 15000 == 0) {
-    //   //   sim.getT().copyToHost();
-    //   //   sim.getT().printField(timestep);
-    //   // }
-    //   // std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
-    //   //           << " iterations: " << iter << "\n";
-    // }
+    if (timestep % 1000 == 0) {
+      // if (timestep % 15000 == 0) {
+      //   sim.getT().copyToHost();
+      //   sim.getT().printField(timestep);
+      // }
+      std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
+                << " iterations: " << iter << "\n";
+    }
     t = t + domain.dt;
     timestep++;
   }

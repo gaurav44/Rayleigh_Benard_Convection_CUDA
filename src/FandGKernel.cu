@@ -35,7 +35,7 @@ __global__ void FG_kernelShared_call(const double *U, const double *V,
   }
 
   // Right Halo
-  if (threadIdx.x == blockDim.x - 1 && i < imax - 1) {
+  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) && i < imax - 1) {
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
   }
@@ -48,7 +48,7 @@ __global__ void FG_kernelShared_call(const double *U, const double *V,
   }
 
   // Top Halo
-  if (threadIdx.y == blockDim.y - 1 && j < jmax - 1) {
+  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) && j < jmax - 1) {
     shared_U[local_idx + blockDim.x + 2] = U[global_idx + imax];
     shared_U[local_idx + blockDim.x + 2 - 1] = U[global_idx + imax - 1];
     shared_V[local_idx + blockDim.x + 2] = V[global_idx + imax];

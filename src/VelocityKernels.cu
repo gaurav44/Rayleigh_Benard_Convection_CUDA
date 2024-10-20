@@ -38,7 +38,7 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
   }
 
   // Right Halo
-  if (threadIdx.x == blockDim.x - 1 && i < imax - 1) {
+  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) && i < imax - 1) {
     shared_P[local_idx + 1] = P[global_idx + 1];
   }
 
@@ -103,7 +103,7 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   }
 
   // Top Halo
-  if (threadIdx.y == blockDim.y - 1 && j < jmax - 1) {
+  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) && j < jmax - 1) {
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
 

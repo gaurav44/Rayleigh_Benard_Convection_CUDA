@@ -83,6 +83,18 @@ public:
       tmp << "\n";
     }
   }
+  
+  void printField() const {
+    // this->copyToHost();
+    std::string fileName = "P.txt";
+    std::ofstream tmp(fileName);
+    for (int j = 1; j < _jmax - 1; j++) {
+      for (int i = 1; i < _imax - 1; i++) {
+        tmp << std::setprecision(8) << i << " " << j << " " << this->operator()(i, j) << "\n";
+      }
+      tmp << "\n";
+    }
+  }
 
   void copyToDevice();
   void copyToDevice() const;
