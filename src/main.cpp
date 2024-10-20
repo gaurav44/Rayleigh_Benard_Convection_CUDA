@@ -12,24 +12,7 @@
 int main() {
   Domain domain;
 
-//  domain.readDomainParameters("domain.txt");
-  domain.xlength = 8.5;
-  domain.ylength = 1;
-  domain.nu = 0.0296;                   // Kinematic Viscosity
-  domain.Re = 1 / domain.nu;            // Reynold's number
-  domain.alpha = 0.00000237;            // Thermal diffusivity
-  domain.Pr = domain.nu / domain.alpha; // Prandtl number
-  domain.beta =
-      0.00179; // Coefficient of thermal expansion (used in Boussinesq approx)
-  domain.tau = 0.5;   // Safety factor for timestep
-  domain.gamma = 0.5; // Donor-cell scheme factor (will be used in convection)
-  domain.GX = 0;
-  domain.GY = -9.81; // Gravitational acceleration
-  domain.imax = 85;  // grid points in x
-  domain.jmax = 18;  // grid points in y
-  domain.dx = domain.xlength / domain.imax;
-  domain.dy = domain.ylength / domain.jmax;
-  domain.dt = 0.05; // Timestep
+  domain.readDomainParameters("domain.txt");
 
   Fields fields(domain.imax + 2, domain.jmax + 2, 293.0);
 
