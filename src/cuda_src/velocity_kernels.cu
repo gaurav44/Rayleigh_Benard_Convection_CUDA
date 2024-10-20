@@ -37,7 +37,9 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) &&
+  if ((threadIdx.x == blockDim.x - 1 ||
+      (blockIdx.x == gridDim.x - 1) &&
+       threadIdx.x == (imax - 2) % blockDim.x) &&
       i < imax - 1) {
     shared_P[local_idx + 1] = P[global_idx + 1];
   }
@@ -82,7 +84,7 @@ void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
 //}
 
 __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
-                                    double dy, int imax, double jmax,
+                                    double dy, int imax, int jmax,
                                     double dt) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
@@ -103,7 +105,7 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) &&
+  if ((threadIdx.y == blockDim.y - 1 || (blockIdx.y == gridDim.y - 1) && threadIdx.y == (jmax - 2) % blockDim.y) &&
       j < jmax - 1) {
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
@@ -182,8 +184,8 @@ __global__ void velocityKernelShared(double *U, double *V, const double *F,
 }
 
 void calculateVelocitiesKernel(Matrix &U, Matrix &V, const Matrix &F,
-                             const Matrix &G, const Matrix &P,
-                             const Domain &domain) {
+                               const Matrix &G, const Matrix &P,
+                               const Domain &domain) {
   dim3 threadsPerBlock(BLOCK_SIZE_UV, BLOCK_SIZE_UV);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);

@@ -1,18 +1,15 @@
 #include "block_sizes.hpp"
 #include "cuda_utils.hpp"
-#include "pressure_solver_kernels.hpp"
 #include "discretization.hpp"
+#include "pressure_solver_kernels.hpp"
 #include <vector>
 
-//#define BLOCK_SIZE 16
 namespace PressureSolverKernels {
 __global__ void SOR_kernel_call(double *P, const double *RS, int imax,
-                                double jmax, double omg, double coeff,
+                                int jmax, double omg, double coeff,
                                 int color) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  //  double coeff = omg / (2.0 * (1.0 / (dx * dx) + 1.0 / (dy * dy)));
 
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1 && (i + j) % 2 == color) {
     int idx = imax * j + i;
@@ -21,9 +18,8 @@ __global__ void SOR_kernel_call(double *P, const double *RS, int imax,
   }
 }
 
-__global__ void SORKernelShared(double *P, const double *RS, int imax,
-                                      double jmax, double omg, double coeff,
-                                      int color) {
+__global__ void SORKernelShared(double *P, const double *RS, int imax, int jmax,
+                                double omg, double coeff, int color) {
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
 
@@ -44,7 +40,9 @@ __global__ void SORKernelShared(double *P, const double *RS, int imax,
     shared_P[local_idx - 1] = P[global_idx - 1];
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) &&
+  if ((threadIdx.x == blockDim.x - 1 ||
+       (blockIdx.x == gridDim.x - 1) &&
+           threadIdx.x == (imax - 2) % blockDim.x) &&
       i < imax - 1)
     shared_P[local_idx + 1] = P[global_idx + 1];
 
@@ -53,7 +51,9 @@ __global__ void SORKernelShared(double *P, const double *RS, int imax,
     shared_P[local_idx - blockDim.x - 2] = P[global_idx - imax];
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockDim.y == gridDim.y - 1) &&
+  if ((threadIdx.y == blockDim.y - 1 ||
+       (blockDim.y == gridDim.y - 1 &&
+        threadIdx.y == (jmax - 2) % blockDim.y)) &&
       j < jmax - 1)
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
 
@@ -83,8 +83,8 @@ __global__ void SORKernelShared(double *P, const double *RS, int imax,
 //}
 
 __global__ void residualKernelShared(const double *P, const double *RS,
-                                           int imax, double jmax,
-                                           double *residual_results) {
+                                     int imax, int jmax,
+                                     double *residual_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
   int global_idx = j * imax + i;
@@ -110,7 +110,9 @@ __global__ void residualKernelShared(const double *P, const double *RS,
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) &&
+  if ((threadIdx.x == blockDim.x - 1 ||
+       (blockIdx.x == gridDim.x - 1 &&
+        threadIdx.x == (imax - 2) % blockDim.x)) &&
       i < imax - 1) {
     shared_P[local_idx + 1] = P[global_idx + 1];
   }
@@ -121,7 +123,9 @@ __global__ void residualKernelShared(const double *P, const double *RS,
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) &&
+  if ((threadIdx.y == blockDim.y - 1 ||
+      (blockIdx.y == gridDim.y - 1 &&
+       threadIdx.y == (jmax - 2) % blockDim.y)) &&
       j < jmax - 1) {
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
@@ -152,18 +156,20 @@ __global__ void residualKernelShared(const double *P, const double *RS,
   }
 }
 
-double calculatePressureKernel(Matrix &P, const Matrix &RS, const Domain* domain,
-                             double omg, double *d_rlocBlock, std::vector<double>& h_rlocBlock) {
+double calculatePressureKernel(Matrix &P, const Matrix &RS,
+                               const Domain *domain, double omg,
+                               double *d_rlocBlock,
+                               std::vector<double> &h_rlocBlock) {
   dim3 threadsPerBlock(BLOCK_SIZE_SOR, BLOCK_SIZE_SOR);
   dim3 numBlocks((domain->imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                 (domain->jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
+                 (domain->jmax + 2 + threadsPerBlock.y - 1) /
+                     threadsPerBlock.y);
 
   size_t shared_mem_sor =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
 
-  double coeff =
-      omg /
-      (2.0 * (1.0 / (domain->dx * domain->dx) + 1.0 / (domain->dy * domain->dy)));
+  double coeff = omg / (2.0 * (1.0 / (domain->dx * domain->dx) +
+                               1.0 / (domain->dy * domain->dy)));
 
   SORKernelShared<<<numBlocks, threadsPerBlock, shared_mem_sor>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
@@ -176,18 +182,17 @@ double calculatePressureKernel(Matrix &P, const Matrix &RS, const Domain* domain
       thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
       domain->jmax + 2, omg, coeff, 1);
   CHECK(cudaGetLastError());
- 
+
   double res = 0.0;
-  //double h_rlocBlock[numBlocks.x * numBlocks.y];
-  //std::vector<double> h_rlocBlock(numBlocks.x*numBlocks.y);
+  // double h_rlocBlock[numBlocks.x * numBlocks.y];
+  // std::vector<double> h_rlocBlock(numBlocks.x*numBlocks.y);
   double h_rloc = 0.0;
 
   size_t shared_mem_residual =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double) +
       threadsPerBlock.x * threadsPerBlock.y;
 
-  residualKernelShared<<<numBlocks, threadsPerBlock,
-                               shared_mem_residual>>>(
+  residualKernelShared<<<numBlocks, threadsPerBlock, shared_mem_residual>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
       domain->jmax + 2, d_rlocBlock);

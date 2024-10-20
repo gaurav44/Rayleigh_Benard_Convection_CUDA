@@ -5,8 +5,8 @@
 #include "fields.hpp"
 #include "pressure_solver.hpp"
 #include "simulation.hpp"
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 int main() {
   Domain domain;
@@ -20,14 +20,16 @@ int main() {
 
   Simulation sim(&fields, &domain);
   sim.copyAllToDevice();
-  Boundary boundary(&fields, &domain, 294.78, 291.20); // T_hot, T_cold -> for the top and bottom boundaries
+  Boundary boundary(
+      &fields, &domain, 294.78,
+      291.20); // T_hot, T_cold -> for the top and bottom boundaries
   PressureSolver presSolver(&domain);
 
   boundary.applyBoundaries();
   boundary.applyPressure();
 
   double t = 0;
-  double t_end = 1000;
+  double t_end = 10000;
   int timestep = 0;
   auto start = std::chrono::high_resolution_clock::now();
   // Time loop
@@ -35,7 +37,7 @@ int main() {
     sim.calculateTimeStep();
 
     sim.calculateTemperature();
-    
+
     sim.calculateFluxes();
 
     sim.calculateRightHandSide();
@@ -46,13 +48,14 @@ int main() {
     while (res > PressureSolver::eps) {
       if (iter >= PressureSolver::itermax) {
         std::cout << "Pressure solver not converged\n";
-        std::cout << "dt: " << domain.dt << "Time: "
-                  << " residual:" << res << " iterations: " << iter << "\n";
+        std::cout << "dt: " << domain.dt << "Time: " << " residual:" << res
+                  << " iterations: " << iter << "\n";
         break;
       }
       boundary.applyPressure();
 
-      res = presSolver.calculatePressure(sim.getPressure(), sim.getRightHandSide());
+      res = presSolver.calculatePressure(sim.getPressure(),
+                                         sim.getRightHandSide());
       iter++;
     }
     sim.calculateVelocities();
@@ -60,10 +63,10 @@ int main() {
     boundary.applyBoundaries();
 
     if (timestep % 1000 == 0) {
-      // if (timestep % 15000 == 0) {
-      //   sim.getT().copyToHost();
-      //   sim.getT().printField(timestep);
-      // }
+      if (timestep % 15000 == 0) {
+        sim.getTemperature().copyToHost();
+        sim.getTemperature().printField(timestep);
+      }
       std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
                 << " iterations: " << iter << "\n";
     }

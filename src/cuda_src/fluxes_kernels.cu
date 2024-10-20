@@ -1,13 +1,13 @@
 #include "block_sizes.hpp"
 #include "cuda_utils.hpp"
+#include "discretization.hpp"
 #include "fluxes_kernels.hpp"
 #include <thrust/device_vector.h>
-#include "discretization.hpp"
 
 namespace FluxesKernels {
 __global__ void FluxesKernelShared(const double *U, const double *V,
                                    const double *T, double *F, double *G,
-                                   int imax, double jmax, double nu, double dt,
+                                   int imax, int jmax, double nu, double dt,
                                    double GX, double GY, double beta) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
@@ -37,7 +37,8 @@ __global__ void FluxesKernelShared(const double *U, const double *V,
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) &&
+  if ((threadIdx.x == blockDim.x - 1 ||
+      (blockIdx.x == gridDim.x - 1 && threadIdx.x == (imax - 2) % blockDim.x)) &&
       i < imax - 1) {
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
@@ -51,7 +52,7 @@ __global__ void FluxesKernelShared(const double *U, const double *V,
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) &&
+  if ((threadIdx.y == blockDim.y - 1 || (blockIdx.y == gridDim.y - 1 && threadIdx.y == (jmax - 2) % blockDim.y)) &&
       j < jmax - 1) {
     shared_U[local_idx + blockDim.x + 2] = U[global_idx + imax];
     shared_U[local_idx + blockDim.x + 2 - 1] = U[global_idx + imax - 1];

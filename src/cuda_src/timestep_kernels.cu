@@ -6,7 +6,7 @@
 #include <thrust/device_vector.h>
 
 namespace TimestepKernels {
-__global__ void velocityUMaxKernel(const double *U, int imax, double jmax,
+__global__ void velocityUMaxKernel(const double *U, int imax, int jmax,
                                  double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -36,7 +36,7 @@ __global__ void velocityUMaxKernel(const double *U, int imax, double jmax,
   }
 }
 
-__global__ void velocityVMaxKernel(const double *V, int imax, double jmax,
+__global__ void velocityVMaxKernel(const double *V, int imax, int jmax,
                                  double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;

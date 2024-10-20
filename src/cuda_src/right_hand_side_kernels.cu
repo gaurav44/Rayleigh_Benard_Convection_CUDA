@@ -24,7 +24,7 @@ namespace RightHandSideKernels {
 
 __global__ void rightHandSideKernelShared(const double *F, const double *G,
                                      double *RS, double dx, double dy, int imax,
-                                     double jmax, double dt) {
+                                     int jmax, double dt) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;

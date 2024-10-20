@@ -1,16 +1,16 @@
+#include "block_sizes.hpp"
 #include "cuda_utils.hpp"
+#include "discretization.hpp"
+#include "temperature_kernels.hpp"
 #include <thread>
 #include <thrust/device_vector.h>
-#include "block_sizes.hpp"
-#include "temperature_kernels.hpp"
-#include "discretization.hpp" 
 
 namespace TemperatureKernels {
 //__global__ void temperature_kernel_call(const double *U, const double *V,
 //                                        double *T, const double *T_old,
 //                                        double dx, double dy, int imax,
-//                                        double jmax, double gamma, double alpha,
-//                                        double dt) {
+//                                        double jmax, double gamma, double
+//                                        alpha, double dt) {
 //  int i = blockIdx.x * blockDim.x + threadIdx.x;
 //  int j = blockIdx.y * blockDim.y + threadIdx.y;
 //
@@ -23,8 +23,8 @@ namespace TemperatureKernels {
 //}
 
 __global__ void temperatureKernelShared(const double *U, const double *V,
-                                              double *T, int imax, double jmax,
-                                              double alpha, double dt) {
+                                        double *T, int imax, int jmax,
+                                        double alpha, double dt) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -54,7 +54,10 @@ __global__ void temperatureKernelShared(const double *U, const double *V,
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) && i < imax - 1) {
+  if ((threadIdx.x == blockDim.x - 1 ||
+       (blockIdx.x == gridDim.x - 1 &&
+        threadIdx.x == (imax - 2) % blockDim.x)) &&
+      i < imax - 1) {
     shared_Told[local_idx + 1] = T[global_idx + 1];
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
@@ -68,7 +71,10 @@ __global__ void temperatureKernelShared(const double *U, const double *V,
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) && j < jmax - 1) {
+  if ((threadIdx.y == blockDim.y - 1 ||
+      (blockIdx.y == gridDim.y - 1) &&
+       threadIdx.y == (jmax - 2) % blockDim.y) &&
+      j < jmax - 1) {
     shared_Told[local_idx + blockDim.x + 2] = T[global_idx + imax];
     shared_U[local_idx + blockDim.x + 2] = U[global_idx + imax];
     shared_V[local_idx + blockDim.x + 2] = V[global_idx + imax];
@@ -88,7 +94,7 @@ __global__ void temperatureKernelShared(const double *U, const double *V,
 }
 
 void calculateTemperatureKernel(const Matrix &U, const Matrix &V, Matrix &T,
-                        const Domain &domain) {
+                                const Domain &domain) {
 
   dim3 threadsPerBlock(BLOCK_SIZE_TEMP, BLOCK_SIZE_TEMP);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
@@ -106,5 +112,4 @@ void calculateTemperatureKernel(const Matrix &U, const Matrix &V, Matrix &T,
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }
-}
-
+} // namespace TemperatureKernels
