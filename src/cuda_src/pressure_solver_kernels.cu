@@ -152,29 +152,29 @@ __global__ void residualKernelShared(const double *P, const double *RS,
   }
 }
 
-double calculatePressureKernel(Matrix &P, const Matrix &RS, const Domain &domain,
+double calculatePressureKernel(Matrix &P, const Matrix &RS, const Domain* domain,
                              double omg, double *d_rlocBlock, std::vector<double>& h_rlocBlock) {
   dim3 threadsPerBlock(BLOCK_SIZE_SOR, BLOCK_SIZE_SOR);
-  dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                 (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
+  dim3 numBlocks((domain->imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                 (domain->jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
   size_t shared_mem_sor =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
 
   double coeff =
       omg /
-      (2.0 * (1.0 / (domain.dx * domain.dx) + 1.0 / (domain.dy * domain.dy)));
+      (2.0 * (1.0 / (domain->dx * domain->dx) + 1.0 / (domain->dy * domain->dy)));
 
   SORKernelShared<<<numBlocks, threadsPerBlock, shared_mem_sor>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
-      thrust::raw_pointer_cast(RS.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, omg, coeff, 0);
+      thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
+      domain->jmax + 2, omg, coeff, 0);
   CHECK(cudaGetLastError());
 
   SORKernelShared<<<numBlocks, threadsPerBlock, shared_mem_sor>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
-      thrust::raw_pointer_cast(RS.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, omg, coeff, 1);
+      thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
+      domain->jmax + 2, omg, coeff, 1);
   CHECK(cudaGetLastError());
  
   double res = 0.0;
@@ -189,8 +189,8 @@ double calculatePressureKernel(Matrix &P, const Matrix &RS, const Domain &domain
   residualKernelShared<<<numBlocks, threadsPerBlock,
                                shared_mem_residual>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
-      thrust::raw_pointer_cast(RS.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, d_rlocBlock);
+      thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
+      domain->jmax + 2, d_rlocBlock);
 
   CHECK(cudaGetLastError());
 
@@ -203,7 +203,7 @@ double calculatePressureKernel(Matrix &P, const Matrix &RS, const Domain &domain
     h_rloc = h_rloc + h_rlocBlock[i];
   }
 
-  res = h_rloc / (domain.imax * domain.jmax);
+  res = h_rloc / (domain->imax * domain->jmax);
   res = std::sqrt(res);
 
   return res;

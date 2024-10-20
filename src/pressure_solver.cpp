@@ -7,14 +7,14 @@ PressureSolver::PressureSolver(Domain *domain) : _domain(domain) {
       (_domain->jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
   CHECK(cudaMalloc(&d_rlocBlock, numBlocks.x * numBlocks.y * sizeof(double)));
-  h_rlocBlock.resize(numBlocks.x*numBlocks.y);
+  h_rlocBlock.resize(numBlocks.x * numBlocks.y);
 }
 
 PressureSolver::~PressureSolver() { CHECK(cudaFree(d_rlocBlock)); }
 
-double PressureSolver::calculatePressure(Matrix &P, const Matrix &RS,
-                                          const Domain &domain) {
-  double res = PressureSolverKernels::calculatePressureKernel(P, RS, domain, omg, d_rlocBlock, h_rlocBlock);
+double PressureSolver::calculatePressure(Matrix &P, const Matrix &RS) {
+  double res = PressureSolverKernels::calculatePressureKernel(
+      P, RS, _domain, omg, d_rlocBlock, h_rlocBlock);
 
   return res;
 };

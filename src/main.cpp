@@ -52,7 +52,7 @@ int main() {
       }
       boundary.applyPressure();
 
-      res = presSolver.calculatePressure(sim.getPressure(), sim.getRightHandSide(), domain);
+      res = presSolver.calculatePressure(sim.getPressure(), sim.getRightHandSide());
       iter++;
     }
     sim.calculateVelocities();

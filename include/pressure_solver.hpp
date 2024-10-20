@@ -13,7 +13,7 @@ public:
 
   ~PressureSolver();
 
-  double calculatePressure(Matrix &P, const Matrix &RS, const Domain &domain);
+  double calculatePressure(Matrix &P, const Matrix &RS);
   static constexpr double eps = 0.00001; // convergence tolerance for SOR
   static const int itermax = 500;        // maximum iterations for SOR
   static constexpr double omg = 1.7;     // relaxation factor for SOR
