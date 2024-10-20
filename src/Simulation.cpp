@@ -1,5 +1,5 @@
-#include "Simulation.hpp"
-#include "Domain.hpp"
+#include "simulation.hpp"
+#include "domain.hpp"
 
 Simulation::Simulation(Fields *fields, Domain *domain)
     : _fields(fields), _domain(domain) {
@@ -8,19 +8,14 @@ Simulation::Simulation(Fields *fields, Domain *domain)
       (_domain->imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
       (_domain->jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  CHECK(cudaMalloc(&d_u_block_max, numBlocks.x * numBlocks.y * sizeof(double)));
-  CHECK(cudaMalloc(&d_v_block_max, numBlocks.x * numBlocks.y * sizeof(double)));
+  CHECK(cudaMalloc(&d_uBlockMax, numBlocks.x * numBlocks.y * sizeof(double)));
+  CHECK(cudaMalloc(&d_vBlockMax, numBlocks.x * numBlocks.y * sizeof(double)));
 
-  h_u_block_max = new double[numBlocks.x * numBlocks.y];
-  h_v_block_max = new double[numBlocks.x * numBlocks.y];
-
-  CHECK(cudaStreamCreate(&streamFU));
-  CHECK(cudaStreamCreate(&streamGV));
-  CHECK(cudaEventCreate(&eventFU));
-  CHECK(cudaEventCreate(&eventGV));
+  h_uBlockMax = new double[numBlocks.x * numBlocks.y];
+  h_vBlockMax = new double[numBlocks.x * numBlocks.y];
 }
 
-void Simulation::calculate_dt() {
+void Simulation::calculateTimeStep() {
   double CFLu = 0.0;
   double CFLv = 0.0;
   double CFLnu = 0.0;
@@ -30,8 +25,8 @@ void Simulation::calculate_dt() {
   double dy2 = _domain->dy * _domain->dy;
 
   auto [u_max, v_max] =
-      Dt_kernel(_fields->U, _fields->V, *_domain, d_u_block_max, d_v_block_max,
-                h_u_block_max, h_v_block_max);
+      TimestepKernels::calculateTimeStepKernel(_fields->U, _fields->V, *_domain, d_uBlockMax, d_vBlockMax,
+                h_uBlockMax, h_vBlockMax);
 
   CFLu = _domain->dx / u_max;
   CFLv = _domain->dy / v_max;
@@ -45,34 +40,27 @@ void Simulation::calculate_dt() {
   _domain->dt = _domain->tau * _domain->dt;
 }
 
-void Simulation::calculate_temperature() {
-  temperature_kernel(_fields->U, _fields->V, _fields->T, *_domain);
+void Simulation::calculateTemperature() {
+  TemperatureKernels::calculateTemperatureKernel(_fields->U, _fields->V, _fields->T, *_domain);
 }
 
-void Simulation::calculate_fluxes() {
-  // F_kernel(_fields->U, _fields->V, _fields->T, _fields->F, *_domain);
-  // G_kernel(_fields->U, _fields->V, _fields->T, _fields->G, *_domain);
-  FandGKernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->T,
+void Simulation::calculateFluxes() {
+  FluxesKernels::calculateFluxesKernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->T,
               *_domain);
 }
 
-void Simulation::calculate_rs() {
-  RS_kernel(_fields->F, _fields->G, _fields->RS, *_domain);
+void Simulation::calculateRightHandSide() {
+  RightHandSideKernels::calculateRightHandSideKernel(_fields->F, _fields->G, _fields->RS, *_domain);
 }
 
-void Simulation::calculate_velocities() {
-  //U_kernel(_fields->U, _fields->F, _fields->P, *_domain);
-  //V_kernel(_fields->V, _fields->G, _fields->P, *_domain);
-  UV_kernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->P, *_domain);
+void Simulation::calculateVelocities() {
+  VelocityKernels::calculateVelocitiesKernel(_fields->U, _fields->V, _fields->F, _fields->G, _fields->P, *_domain);
 }
 
 Simulation::~Simulation() {
-  CHECK(cudaFree(d_u_block_max));
-  CHECK(cudaFree(d_v_block_max));
-  CHECK(cudaStreamDestroy(streamFU));
-  CHECK(cudaStreamDestroy(streamGV));
-  CHECK(cudaEventDestroy(eventFU));
-  CHECK(cudaEventDestroy(eventGV));
-  free(h_u_block_max);
-  free(h_v_block_max);
+  CHECK(cudaFree(d_uBlockMax));
+  CHECK(cudaFree(d_vBlockMax));
+ 
+  free(h_uBlockMax);
+  free(h_vBlockMax);
 }

@@ -1,8 +1,9 @@
-#include "Boundary.hpp"
-#include "cuda_utils.hpp"
 #include "block_sizes.hpp"
+#include "boundary_kernels.hpp"
+#include "cuda_utils.hpp"
 
-__global__ void BoundaryLR_kernel_call(double *U, double *V, double *F,
+namespace BoundaryKernels {
+__global__ void BoundaryLeftRightKernel(double *U, double *V, double *F,
                                        double *G, double *T, int imax,
                                        int jmax) {
   int j = blockIdx.x * blockDim.x + threadIdx.x;
@@ -28,7 +29,7 @@ __global__ void BoundaryLR_kernel_call(double *U, double *V, double *F,
   }
 }
 
-__global__ void BoundaryTB_kernel_call(double *U, double *V, double *F,
+__global__ void BoundaryTopBottomKernel(double *U, double *V, double *F,
                                        double *G, double *T, int imax, int jmax,
                                        double Th, double Tc) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -54,22 +55,14 @@ __global__ void BoundaryTB_kernel_call(double *U, double *V, double *F,
   }
 }
 
-void Boundary_kernel(Fields &fields, const Domain &domain, double Th, double Tc,
-                     cudaStream_t streamLR,cudaStream_t streamTB, cudaEvent_t eventLR,
-                     cudaEvent_t eventTB) {
+void applyBoundaryKernel(Fields &fields, const Domain &domain, double Th,
+                         double Tc, cudaStream_t streamLR,
+                         cudaStream_t streamTB, cudaEvent_t eventLR,
+                         cudaEvent_t eventTB) {
   dim3 threadsPerBlock(BLOCK_SIZE_BC);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
-  //cudaStream_t streamLR;
-  //cudaStream_t streamTB;
-  //CHECK(cudaStreamCreate(&streamLR));
-  //CHECK(cudaStreamCreate(&streamTB));
-
-  //cudaEvent_t eventLR, eventTB;
-  //CHECK(cudaEventCreate(&eventLR));
-  //CHECK(cudaEventCreate(&eventTB));
-
-  BoundaryLR_kernel_call<<<numBlocks, threadsPerBlock, 0, streamLR>>>(
+  BoundaryLeftRightKernel<<<numBlocks, threadsPerBlock, 0, streamLR>>>(
       thrust::raw_pointer_cast(fields.U.d_container.data()),
       thrust::raw_pointer_cast(fields.V.d_container.data()),
       thrust::raw_pointer_cast(fields.F.d_container.data()),
@@ -79,7 +72,7 @@ void Boundary_kernel(Fields &fields, const Domain &domain, double Th, double Tc,
   CHECK(cudaGetLastError());
   CHECK(cudaEventRecord(eventLR, streamLR));
 
-  BoundaryTB_kernel_call<<<numBlocks, threadsPerBlock, 0, streamTB>>>(
+  BoundaryTopBottomKernel<<<numBlocks, threadsPerBlock, 0, streamTB>>>(
       thrust::raw_pointer_cast(fields.U.d_container.data()),
       thrust::raw_pointer_cast(fields.V.d_container.data()),
       thrust::raw_pointer_cast(fields.F.d_container.data()),
@@ -91,15 +84,9 @@ void Boundary_kernel(Fields &fields, const Domain &domain, double Th, double Tc,
 
   CHECK(cudaStreamWaitEvent(0, eventLR, 0));
   CHECK(cudaStreamWaitEvent(0, eventTB, 0));
-
-  //CHECK(cudaStreamDestroy(streamTB));
-  //CHECK(cudaStreamDestroy(streamLR));
-  //CHECK(cudaEventDestroy(eventTB));
-  //CHECK(cudaEventDestroy(eventLR));
-  // cudaDeviceSynchronize();
 }
 
-__global__ void BoundaryP_kernel_call(double *P, int imax, int jmax) {
+__global__ void pressureBoundaryKernel(double *P, int imax, int jmax) {
   int j = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (j > 0 && j < jmax) {
@@ -128,13 +115,14 @@ __global__ void BoundaryP_kernel_call(double *P, int imax, int jmax) {
   }
 }
 
-void BoundaryP_kernel(Matrix &p, const Domain &domain) {
+void applyPressureBoundaryKernel(Matrix &p, const Domain &domain) {
   dim3 threadsPerBlock(BLOCK_SIZE_BC);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x);
 
-  BoundaryP_kernel_call<<<numBlocks, threadsPerBlock>>>(
+  pressureBoundaryKernel<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(p.d_container.data()), domain.imax + 2,
       domain.jmax + 2);
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }
+} // namespace BoundaryKernels

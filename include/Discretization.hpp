@@ -1,6 +1,6 @@
 #pragma once
-#include "DataStructure.hpp"
-#include "Domain.hpp"
+#include "datastructure.hpp"
+#include "domain.hpp"
 #include "thrust/device_vector.h"
 #include <cmath>
 #include "cuda_utils.hpp"

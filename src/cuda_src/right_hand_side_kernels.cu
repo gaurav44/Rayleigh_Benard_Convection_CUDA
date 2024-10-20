@@ -1,11 +1,10 @@
-#include "Simulation.hpp"
+#include "block_sizes.hpp"
 #include "cuda_utils.hpp"
+#include "right_hand_side_kernels.hpp"
 #include <thread>
 #include <thrust/device_vector.h>
-#include "block_sizes.hpp"
 
-// #define BLOCK_SIZE 16
-
+namespace RightHandSideKernels {
 //__global__ void RS_kernel_call(const double *F, const double *G, double *RS,
 //                               double dx, double dy, int imax, double jmax,
 //                               double dt) {
@@ -23,7 +22,7 @@
 //  }
 //}
 
-__global__ void RS_kernelShared_call(const double *F, const double *G,
+__global__ void rightHandSideKernelShared(const double *F, const double *G,
                                      double *RS, double dx, double dy, int imax,
                                      double jmax, double dt) {
   // indices offset by 1 to account for halos
@@ -65,7 +64,7 @@ __global__ void RS_kernelShared_call(const double *F, const double *G,
   }
 }
 
-void RS_kernel(const Matrix &F, const Matrix &G, Matrix &RS,
+void calculateRightHandSideKernel(const Matrix &F, const Matrix &G, Matrix &RS,
                const Domain &domain) {
   dim3 threadsPerBlock(BLOCK_SIZE_RS, BLOCK_SIZE_RS);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
@@ -74,7 +73,7 @@ void RS_kernel(const Matrix &F, const Matrix &G, Matrix &RS,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 2 * sizeof(double);
 
-  RS_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  rightHandSideKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain.dx, domain.dy,
@@ -82,3 +81,4 @@ void RS_kernel(const Matrix &F, const Matrix &G, Matrix &RS,
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }
+} // namespace RightHandSideKernels

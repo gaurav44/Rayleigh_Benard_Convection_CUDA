@@ -1,4 +1,4 @@
-#include "Discretization.hpp"
+#include "discretization.hpp"
 
 Discretization::Discretization(int imax, int jmax, double dx, double dy,
                                double gamma) {

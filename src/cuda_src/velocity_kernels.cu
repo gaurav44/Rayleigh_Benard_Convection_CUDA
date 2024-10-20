@@ -1,10 +1,9 @@
-#include "Simulation.hpp"
+#include "block_sizes.hpp"
 #include "cuda_utils.hpp"
 #include "thrust/device_vector.h"
-#include "block_sizes.hpp"
+#include "velocity_kernels.hpp"
 
-// #define BLOCK_SIZE 16
-
+namespace VelocityKernels {
 //__global__ void U_kernel_call(double *U, const double *F, const double *P,
 //                              double dx, int imax, double jmax, double dt) {
 //  int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -38,7 +37,8 @@ __global__ void U_kernelShared_call(double *U, const double *F, const double *P,
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) && i < imax - 1) {
+  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) &&
+      i < imax - 1) {
     shared_P[local_idx + 1] = P[global_idx + 1];
   }
 
@@ -103,7 +103,8 @@ __global__ void V_kernelShared_call(double *V, const double *G, const double *P,
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) && j < jmax - 1) {
+  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) &&
+      j < jmax - 1) {
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
 
@@ -135,9 +136,10 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
   // cudaDeviceSynchronize();
 }
 
-__global__ void UV_kernelShared_call(double* U, double *V, const double* F, const double *G, const double *P,
-                                    double dx, double dy, int imax, double jmax,
-                                    double dt) {
+__global__ void velocityKernelShared(double *U, double *V, const double *F,
+                                     const double *G, const double *P,
+                                     double dx, double dy, int imax,
+                                     double jmax, double dt) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -179,8 +181,9 @@ __global__ void UV_kernelShared_call(double* U, double *V, const double* F, cons
   }
 }
 
-void UV_kernel(Matrix &U, Matrix &V, const Matrix &F, const Matrix &G,
-               const Matrix &P, const Domain &domain) {
+void calculateVelocitiesKernel(Matrix &U, Matrix &V, const Matrix &F,
+                             const Matrix &G, const Matrix &P,
+                             const Domain &domain) {
   dim3 threadsPerBlock(BLOCK_SIZE_UV, BLOCK_SIZE_UV);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
@@ -188,13 +191,13 @@ void UV_kernel(Matrix &U, Matrix &V, const Matrix &F, const Matrix &G,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
 
-  UV_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  velocityKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
-      thrust::raw_pointer_cast(P.d_container.data()),
-      domain.dx, domain.dy,
+      thrust::raw_pointer_cast(P.d_container.data()), domain.dx, domain.dy,
       domain.imax + 2, domain.jmax + 2, domain.dt);
   CHECK(cudaGetLastError());
 }
+} // namespace VelocityKernels

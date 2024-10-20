@@ -1,4 +1,4 @@
-#include "Boundary.hpp"
+#include "boundary.hpp"
 #include "cuda_utils.hpp"
 
 Boundary::Boundary(Fields *fields, Domain *domain, double Th, double Tc)
@@ -16,8 +16,8 @@ Boundary::~Boundary() {
   CHECK(cudaEventDestroy(eventLR));
 }
 
-void Boundary::apply_boundaries() {
-  Boundary_kernel(*_fields, *_domain, _Th, _Tc, streamLR, streamTB, eventLR, eventTB);
+void Boundary::applyBoundaries() {
+  BoundaryKernels::applyBoundaryKernel(*_fields, *_domain, _Th, _Tc, streamLR, streamTB, eventLR, eventTB);
 }
 
-void Boundary::apply_pressure() { BoundaryP_kernel(_fields->P, *_domain); }
+void Boundary::applyPressure() { BoundaryKernels::applyPressureBoundaryKernel(_fields->P, *_domain); }

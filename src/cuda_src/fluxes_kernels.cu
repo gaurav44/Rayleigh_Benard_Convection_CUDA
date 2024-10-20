@@ -1,12 +1,14 @@
-#include "Simulation.hpp"
-#include "cuda_utils.hpp"
-#include <thrust/device_vector.h>
 #include "block_sizes.hpp"
+#include "cuda_utils.hpp"
+#include "fluxes_kernels.hpp"
+#include <thrust/device_vector.h>
+#include "discretization.hpp"
 
-__global__ void FG_kernelShared_call(const double *U, const double *V,
-                                    const double *T, double* F, double *G, int imax,
-                                    double jmax, double nu, double dt, double GX,
-                                    double GY, double beta) {
+namespace FluxesKernels {
+__global__ void FluxesKernelShared(const double *U, const double *V,
+                                   const double *T, double *F, double *G,
+                                   int imax, double jmax, double nu, double dt,
+                                   double GX, double GY, double beta) {
   // indices offset by 1 to account for halos
   int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
   int j = blockIdx.y * blockDim.y + threadIdx.y + 1;
@@ -35,7 +37,8 @@ __global__ void FG_kernelShared_call(const double *U, const double *V,
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) && i < imax - 1) {
+  if ((threadIdx.x == blockDim.x - 1 || blockIdx.x == gridDim.x - 1) &&
+      i < imax - 1) {
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
   }
@@ -48,7 +51,8 @@ __global__ void FG_kernelShared_call(const double *U, const double *V,
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) && j < jmax - 1) {
+  if ((threadIdx.y == blockDim.y - 1 || blockIdx.y == gridDim.y - 1) &&
+      j < jmax - 1) {
     shared_U[local_idx + blockDim.x + 2] = U[global_idx + imax];
     shared_U[local_idx + blockDim.x + 2 - 1] = U[global_idx + imax - 1];
     shared_V[local_idx + blockDim.x + 2] = V[global_idx + imax];
@@ -81,9 +85,8 @@ __global__ void FG_kernelShared_call(const double *U, const double *V,
   }
 }
 
-
-void FandGKernel(const Matrix &U, const Matrix &V, Matrix &F, Matrix &G,
-                 const Matrix &T, const Domain &domain) {
+void calculateFluxesKernel(const Matrix &U, const Matrix &V, Matrix &F,
+                           Matrix &G, const Matrix &T, const Domain &domain) {
   dim3 threadsPerBlock(BLOCK_SIZE_FG, BLOCK_SIZE_FG);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
@@ -91,13 +94,13 @@ void FandGKernel(const Matrix &U, const Matrix &V, Matrix &F, Matrix &G,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 4 * sizeof(double);
 
-  FG_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  FluxesKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(T.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()),
-      thrust::raw_pointer_cast(G.d_container.data()),
-      domain.imax + 2, domain.jmax + 2, domain.nu, domain.dt, domain.GX, domain.GY, domain.beta
-  );
+      thrust::raw_pointer_cast(G.d_container.data()), domain.imax + 2,
+      domain.jmax + 2, domain.nu, domain.dt, domain.GX, domain.GY, domain.beta);
   CHECK(cudaGetLastError());
 }
+} // namespace FluxesKernels

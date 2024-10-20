@@ -25,31 +25,23 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 --use_fast_math -maxrregcount=64 -Xptxas -dlcm=ca")
 
-# file(GLOB files src/*.cpp)
 set(SOURCES_CPP
     src/main.cpp
-    #    src/DataStructure.cpp
-    src/Simulation.cpp
-    src/Boundary.cpp
-    #    src/Discretization.cpp
-    src/PressureSolver.cpp
-
+    src/simulation.cpp
+    src/boundary.cpp
+    src/pressure_solver.cpp
 )
 
 set(SOURCES_CU
-    src/DataStructure.cu
-    src/TemperatureKernel.cu
-    #src/FKernel.cu
-    #src/GKernel.cu
-    src/FandGKernel.cu
-    src/RSKernel.cu
-    src/BoundaryKernels.cu
-    src/Discretization.cu
-    #src/PressureSolver.cu
-    src/PressureSolverKernel.cu
-    src/VelocityKernels.cu
-    src/DtKernel.cu
-    #src/Simulation.cu
+    src/cuda_src/datastructure.cu
+    src/cuda_src/temperature_kernels.cu
+    src/cuda_src/fluxes_kernels.cu
+    src/cuda_src/right_hand_side_kernels.cu
+    src/cuda_src/boundary_kernels.cu
+    src/cuda_src/discretization.cu
+    src/cuda_src/pressure_solver_kernels.cu
+    src/cuda_src/velocity_kernels.cu
+    src/cuda_src/timestep_kernels.cu
 )
 
 add_executable(main ${SOURCES_CPP} ${SOURCES_CU})
@@ -59,4 +51,4 @@ set_target_properties(main PROPERTIES
                         CUDA_ARCHITECTURES "61"
 )
 
-target_include_directories(main PUBLIC include ${CUDA_TOOLKIT_ROOT_DIR}/include)
+target_include_directories(main PUBLIC include include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)

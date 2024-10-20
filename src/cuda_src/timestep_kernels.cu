@@ -1,16 +1,17 @@
-#include "Simulation.hpp"
+#include "block_sizes.hpp"
+#include "cuda_utils.hpp"
+#include "timestep_kernels.hpp"
 #include <cmath>
 #include <iterator>
 #include <thrust/device_vector.h>
-#include "cuda_utils.hpp"
-#include "block_sizes.hpp"
 
-__global__ void UMax_kernel_call(const double *U, int imax, double jmax,
+namespace TimestepKernels {
+__global__ void velocityUMaxKernel(const double *U, int imax, double jmax,
                                  double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-  __shared__ double shared_data[BLOCK_SIZE_DT*BLOCK_SIZE_DT];
+  __shared__ double shared_data[BLOCK_SIZE_DT * BLOCK_SIZE_DT];
   int shared_index = threadIdx.x * blockDim.y + threadIdx.y;
   shared_data[shared_index] = 0.0;
 
@@ -35,12 +36,12 @@ __global__ void UMax_kernel_call(const double *U, int imax, double jmax,
   }
 }
 
-__global__ void VMax_kernel_call(const double *V, int imax, double jmax,
+__global__ void velocityVMaxKernel(const double *V, int imax, double jmax,
                                  double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-  __shared__ double shared_data[BLOCK_SIZE_DT*BLOCK_SIZE_DT];
+  __shared__ double shared_data[BLOCK_SIZE_DT * BLOCK_SIZE_DT];
   int shared_index = threadIdx.x * blockDim.y + threadIdx.y;
   shared_data[shared_index] = 0.0;
 
@@ -65,37 +66,42 @@ __global__ void VMax_kernel_call(const double *V, int imax, double jmax,
   }
 }
 
-std::pair<double, double> Dt_kernel(const Matrix &U, const Matrix &V,
-                                    const Domain &domain, double* d_u_block_max, double* d_v_block_max,
-                                    double* h_u_block_max, double* h_v_block_max) {
+std::pair<double, double> calculateTimeStepKernel(const Matrix &U, const Matrix &V,
+                                    const Domain &domain, double *d_uBlockMax,
+                                    double *d_vBlockMax,
+                                    double *h_uBlockMax,
+                                    double *h_vBlockMax) {
   dim3 threadsPerBlock(BLOCK_SIZE_DT, BLOCK_SIZE_DT);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  double h_u_max = 0.0;
-  double h_v_max = 0.0;
+  double h_uMax = 0.0;
+  double h_vMax = 0.0;
 
-  UMax_kernel_call<<<numBlocks, threadsPerBlock, BLOCK_SIZE_DT * BLOCK_SIZE_DT * sizeof(double)>>>(
+  velocityUMaxKernel<<<numBlocks, threadsPerBlock,
+                     BLOCK_SIZE_DT * BLOCK_SIZE_DT * sizeof(double)>>>(
       thrust::raw_pointer_cast(U.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, d_u_block_max);
+      domain.jmax + 2, d_uBlockMax);
   CHECK(cudaGetLastError());
 
-  VMax_kernel_call<<<numBlocks, threadsPerBlock, BLOCK_SIZE_DT * BLOCK_SIZE_DT * sizeof(double)>>>(
+  velocityVMaxKernel<<<numBlocks, threadsPerBlock,
+                     BLOCK_SIZE_DT * BLOCK_SIZE_DT * sizeof(double)>>>(
       thrust::raw_pointer_cast(V.d_container.data()), domain.imax + 2,
-      domain.jmax + 2, d_v_block_max);
+      domain.jmax + 2, d_vBlockMax);
   CHECK(cudaGetLastError());
 
-  CHECK(cudaMemcpy(h_u_block_max, d_u_block_max,
-             numBlocks.x * numBlocks.y * sizeof(double),
-             cudaMemcpyDeviceToHost));
-  CHECK(cudaMemcpy(h_v_block_max, d_v_block_max,
-             numBlocks.x * numBlocks.y * sizeof(double),
-             cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy(h_uBlockMax, d_uBlockMax,
+                   numBlocks.x * numBlocks.y * sizeof(double),
+                   cudaMemcpyDeviceToHost));
+  CHECK(cudaMemcpy(h_vBlockMax, d_vBlockMax,
+                   numBlocks.x * numBlocks.y * sizeof(double),
+                   cudaMemcpyDeviceToHost));
 
   // Find the maximum in the result array
   for (int i = 0; i < numBlocks.x * numBlocks.y; ++i) {
-    h_u_max = fmax(h_u_max, h_u_block_max[i]);
-    h_v_max = fmax(h_v_max, h_v_block_max[i]);
+    h_uMax = fmax(h_uMax, h_uBlockMax[i]);
+    h_vMax = fmax(h_vMax, h_vBlockMax[i]);
   }
-  return {h_u_max, h_v_max};
+  return {h_uMax, h_vMax};
 }
+} // namespace TimestepKernels

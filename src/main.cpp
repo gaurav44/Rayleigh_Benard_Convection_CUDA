@@ -1,12 +1,11 @@
-#include "Boundary.hpp"
-#include "DataStructure.hpp"
-#include "Discretization.hpp"
-#include "Domain.hpp"
-#include "Fields.hpp"
-#include "PressureSolver.hpp"
-#include "Simulation.hpp"
+#include "boundary.hpp"
+#include "datastructure.hpp"
+#include "discretization.hpp"
+#include "domain.hpp"
+#include "fields.hpp"
+#include "pressure_solver.hpp"
+#include "simulation.hpp"
 #include <iostream>
-#include <unistd.h>
 #include <chrono>
 
 int main() {
@@ -24,8 +23,8 @@ int main() {
   Boundary boundary(&fields, &domain, 294.78, 291.20); // T_hot, T_cold -> for the top and bottom boundaries
   PressureSolver presSolver(&domain);
 
-  boundary.apply_boundaries();
-  boundary.apply_pressure();
+  boundary.applyBoundaries();
+  boundary.applyPressure();
 
   double t = 0;
   double t_end = 1000;
@@ -33,13 +32,13 @@ int main() {
   auto start = std::chrono::high_resolution_clock::now();
   // Time loop
   while (t < t_end) {
-    sim.calculate_dt();
+    sim.calculateTimeStep();
 
-    sim.calculate_temperature();
+    sim.calculateTemperature();
     
-    sim.calculate_fluxes();
+    sim.calculateFluxes();
 
-    sim.calculate_rs();
+    sim.calculateRightHandSide();
 
     int iter = 0;
     double res = 10.0;
@@ -51,14 +50,14 @@ int main() {
                   << " residual:" << res << " iterations: " << iter << "\n";
         break;
       }
-      boundary.apply_pressure();
+      boundary.applyPressure();
 
-      res = presSolver.calculate_pressure(sim.getP(), sim.getRS(), domain);
+      res = presSolver.calculatePressure(sim.getPressure(), sim.getRightHandSide(), domain);
       iter++;
     }
-    sim.calculate_velocities();
+    sim.calculateVelocities();
 
-    boundary.apply_boundaries();
+    boundary.applyBoundaries();
 
     if (timestep % 1000 == 0) {
       // if (timestep % 15000 == 0) {

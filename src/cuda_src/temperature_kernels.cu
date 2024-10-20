@@ -1,11 +1,11 @@
-#include "Simulation.hpp"
 #include "cuda_utils.hpp"
 #include <thread>
 #include <thrust/device_vector.h>
 #include "block_sizes.hpp"
+#include "temperature_kernels.hpp"
+#include "discretization.hpp" 
 
-// #define BLOCK_SIZE 16
-
+namespace TemperatureKernels {
 //__global__ void temperature_kernel_call(const double *U, const double *V,
 //                                        double *T, const double *T_old,
 //                                        double dx, double dy, int imax,
@@ -22,7 +22,7 @@
 //  }
 //}
 
-__global__ void temperature_kernelShared_call(const double *U, const double *V,
+__global__ void temperatureKernelShared(const double *U, const double *V,
                                               double *T, int imax, double jmax,
                                               double alpha, double dt) {
   // indices offset by 1 to account for halos
@@ -87,7 +87,7 @@ __global__ void temperature_kernelShared_call(const double *U, const double *V,
   }
 }
 
-void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
+void calculateTemperatureKernel(const Matrix &U, const Matrix &V, Matrix &T,
                         const Domain &domain) {
 
   dim3 threadsPerBlock(BLOCK_SIZE_TEMP, BLOCK_SIZE_TEMP);
@@ -97,7 +97,7 @@ void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 3 * sizeof(double);
 
-  temperature_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  temperatureKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(T.d_container.data()), domain.imax + 2,
@@ -106,3 +106,5 @@ void temperature_kernel(const Matrix &U, const Matrix &V, Matrix &T,
   CHECK(cudaGetLastError());
   // cudaDeviceSynchronize();
 }
+}
+
