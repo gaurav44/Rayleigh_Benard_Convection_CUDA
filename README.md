@@ -1,6 +1,6 @@
 # Rayleigh-Bénard Convection Simulation with CUDA
 
-This project simulates **Rayleigh-Bénard Convection**, a fundamental fluid dynamics phenomenon, using CUDA to leverage GPU acceleration for high-performance computing. The simulation showcases the formation of convective rolls in a fluid heated from below and cooled from above. See reference [1]
+This project simulates **Rayleigh-Bénard Convection**, a fundamental fluid dynamics phenomenon, using CUDA to leverage GPU acceleration for high-performance computing. The simulation showcases the formation of convective rolls in a fluid heated from below and cooled from above. The setup uses 2D staggered grid, where velocities are stored at cell faces and temperature and pressure is stored at cell centers. See reference [1]
 
 <div align="center">
   <img width="800" height="492" src="Rayleigh-benard1.gif">
