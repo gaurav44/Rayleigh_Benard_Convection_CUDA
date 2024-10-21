@@ -1,9 +1,12 @@
 #pragma once
-#include "DataStructure.hpp"
-#include "Domain.hpp"
+#include "datastructure.hpp"
+#include "domain.hpp"
 #include <cmath>
+
 class Discretization {
 public:
+  Discretization(int imax, int jmax, double dx, double dy, double gamma);
+
   // Calculating the value of convective part of U
   static double convection_u(const Matrix &U, const Matrix &V,
                              const Domain &domain, int i, int j);
@@ -32,4 +35,10 @@ public:
   
   static double interpolate(const Matrix &A, int i, int j, int i_offset,
                             int j_offset);
- };
+
+ static int _imax;
+ static int _jmax;
+ static double _dx;
+ static double _dy;
+ static double _gamma;
+};

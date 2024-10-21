@@ -1,42 +1,25 @@
-#include "Boundary.hpp"
-#include "DataStructure.hpp"
-#include "Domain.hpp"
-#include "Fields.hpp"
-#include "PressureSolver.hpp"
-#include "Simulation.hpp"
+#include "boundary.hpp"
+#include "datastructure.hpp"
+#include "domain.hpp"
+#include "fields.hpp"
+#include "pressure_solver.hpp"
+#include "simulation.hpp"
 #include <iostream>
 #include <chrono>
 
 int main() {
   Domain domain;
 
-  domain.xlength = 8.5;
-  domain.ylength = 1;
-  domain.nu = 0.0296;                   // Kinematic Viscosity
-  domain.Re = 1 / domain.nu;            // Reynold's number
-  domain.alpha = 0.00000237;            // Thermal diffusivity
-  domain.Pr = domain.nu / domain.alpha; // Prandtl number
-  domain.beta =
-      0.00179; // Coefficient of thermal expansion (used in Boussinesq approx)
-  domain.tau = 0.5;   // Safety factor for timestep
-  domain.gamma = 0.5; // Donor-cell scheme factor (will be used in convection)
-  domain.GX = 0;
-  domain.GY = -9.81; // Gravitational acceleration
-  domain.imax = 85;  // grid points in x
-  domain.jmax = 18;  // grid points in y
-  domain.dx = domain.xlength / domain.imax;
-  domain.dy = domain.ylength / domain.jmax;
-  domain.dt = 0.05; // Timestep
+  domain.readDomainParameters("domain.txt");
 
-  Fields fields;
-  fields.U = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.V = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.F = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.G = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.P = Matrix(domain.imax + 2, domain.jmax + 2);
-  fields.T = Matrix(domain.imax + 2, domain.jmax + 2, 293.0);
-  fields.T_old = Matrix(domain.imax + 2, domain.jmax + 2, 293.0);
-  fields.RS = Matrix(domain.imax + 2, domain.jmax + 2, 0.0);
+  Fields fields(domain.imax + 2, domain.jmax + 2, 293.0);
+
+  Discretization disc(domain.imax + 2, domain.jmax + 2, domain.dx, domain.dy,
+                      domain.gamma);
+
+  Simulation sim(&fields, &domain);
+  Boundary boundary(&fields, &domain, 294.78, 291.20); // T_hot, T_cold -> for the top and bottom boundaries
+  PressureSolver presSolver(&domain);
 
   double t_end = 1000;
   double omg = 1.7;     // SOR relaxation factor
@@ -48,43 +31,45 @@ int main() {
   double Tc = 291.20;
 
   // Apply Boundaries
-  Boundary::apply_boundaries(fields, domain, Th, Tc);
-  Boundary::apply_pressure(fields.P, domain);
+  boundary.applyBoundaries();
+  boundary.applyPressureBoundary();
   double t = 0;
   int timestep = 0;
 
   auto start = std::chrono::high_resolution_clock::now();
   // Time loop
   while (t < t_end) {
-    Simulation::calculate_dt(domain, fields);
-    Simulation::calculate_temperature(fields.U, fields.V, fields.T, domain);
-    Simulation::calculate_fluxes(fields.U, fields.V, fields.T, fields.F,
-                                 fields.G, domain);
-    Simulation::calculate_rs(fields.F, fields.G, fields.RS, domain);
+    sim.calculateTimestep();
+
+    sim.calculateTemperature();
+
+    sim.calculateFluxes();
+
+    sim.calculateRightHandSide();
 
     int iter = 0;
     double res = 10;
 
-    while (res > eps) {
-      if (iter >= itermax) {
-        // std::cout << "Pressure solver not converged\n";
-        // std::cout << "dt: " << domain.dt << "Time: "
-        //           << " residual:" << res << " iterations: " << iter << "\n";
+    while (res > PressureSolver::eps) {
+      if (iter >= PressureSolver::itermax) {
+        std::cout << "Pressure solver not converged\n";
+        std::cout << "dt: " << domain.dt << "Time: "
+                  << " residual:" << res << " iterations: " << iter << "\n";
         break;
       }
-      Boundary::apply_pressure(fields.P, domain);
+      boundary.applyPressureBoundary();
       res =
-          PressureSolver::calculate_pressure(fields.P, fields.RS, domain, omg);
+          presSolver.calculatePressure(fields.P, fields.RS);
       iter++;
     }
 
-    Simulation::calculate_velocities(fields.U, fields.V, fields.F, fields.G,
-                                     fields.P, domain);
-    Boundary::apply_boundaries(fields, domain, Th, Tc);
+    sim.calculateVelocities();
 
-    // if (timestep % 1000 == 0)
-    //   std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
-    //             << " iterations: " << iter << "\n";
+    boundary.applyBoundaries();
+
+    if (timestep % 1000 == 0)
+      std::cout << "dt: " << domain.dt << "Time: " << t << " residual:" << res
+                << " iterations: " << iter << "\n";
     t = t + domain.dt;
     timestep++;
   }

@@ -1,4 +1,4 @@
-#include "DataStructure.hpp"
+#include "datastructure.hpp"
 
 //template<typename T>
 Matrix::Matrix() {}
