@@ -1,4 +1,4 @@
-#include "Simulation.hpp"
+#include "simulation.hpp"
 #include "cuda_utils.hpp"
 #include <thrust/device_vector.h>
 
