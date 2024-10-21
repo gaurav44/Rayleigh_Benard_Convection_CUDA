@@ -26,5 +26,10 @@ The project requires CUDA-enabled GPU to run. It has been tested with NVIDIA-GeF
 - shared-memory reductions for maximum velocity and residual computations
 - Implemented Red-Black SOR algorithm for solving Pressure-Poisson equation
 
+## Speedup
+<div align="center">
+  <img width="800" height="492" src="speedup.png">
+</div>
+
 ## Reference
 - Griebel, M., Dornsheifer, T., & Neunhoeffer, T. (1998). *Numerical Simulation in Fluid Dynamics: A Practical Introduction*. SIAM: Society for Industrial and Applied Mathematics.
