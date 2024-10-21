@@ -25,16 +25,18 @@ void Simulation::calculateTimeStep() {
   double dy2 = _domain->dy * _domain->dy;
 
   auto [u_max, v_max] =
-      TimestepKernels::calculateTimeStepKernel(_fields->U, _fields->V, *_domain, d_uBlockMax, d_vBlockMax,
+      TimestepKernels::calculateUVMaxKernel(_fields->U, _fields->V, *_domain, d_uBlockMax, d_vBlockMax,
                 h_uBlockMax, h_vBlockMax);
 
   CFLu = _domain->dx / u_max;
   CFLv = _domain->dy / v_max;
 
-  CFLnu = (0.5 / _domain->nu) * (1.0 / (1.0 / dx2 + 1.0 / dy2));
+  double multiplier = (1.0 / (1.0 / dx2 + 1.0 / dy2));
+
+  CFLnu = (0.5 / _domain->nu) * multiplier;//(1.0 / (1.0 / dx2 + 1.0 / dy2));
   _domain->dt = std::min(CFLnu, std::min(CFLu, CFLv));
 
-  CFLt = (0.5 / _domain->alpha) * (1.0 / (1.0 / dx2 + 1.0 / dy2));
+  CFLt = (0.5 / _domain->alpha) * multiplier;//(1.0 / (1.0 / dx2 + 1.0 / dy2));
   _domain->dt = std::min(_domain->dt, CFLt);
 
   _domain->dt = _domain->tau * _domain->dt;

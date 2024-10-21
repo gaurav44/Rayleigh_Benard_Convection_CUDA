@@ -66,7 +66,7 @@ __global__ void velocityVMaxKernel(const double *V, int imax, int jmax,
   }
 }
 
-std::pair<double, double> calculateTimeStepKernel(const Matrix &U, const Matrix &V,
+std::pair<double, double> calculateUVMaxKernel(const Matrix &U, const Matrix &V,
                                     const Domain &domain, double *d_uBlockMax,
                                     double *d_vBlockMax,
                                     double *h_uBlockMax,
