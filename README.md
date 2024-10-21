@@ -1,9 +1,10 @@
 # Rayleigh-Bénard Convection Simulation with CUDA
-<div align="center">
-  <img width="466" height="492" src="Rayleigh-benard1.gif">
-</div>
 
 This project simulates **Rayleigh-Bénard Convection**, a fundamental fluid dynamics phenomenon, using CUDA to leverage GPU acceleration for high-performance computing. The simulation showcases the formation of convective rolls in a fluid heated from below and cooled from above.
+
+<div align="center">
+  <img width="800" height="492" src="Rayleigh-benard1.gif">
+</div>
 
 ## Hardware requirements
 The project requires CUDA-enabled GPU to run. It has been tested with NVIDIA-GeForce GTX 1050 which has Pascal architecture and Compute Capability of 6.1
