@@ -171,7 +171,7 @@ double calculatePressureKernel(Matrix &P, const Matrix &RS,
   double coeff = omg / (2.0 * (1.0 / (domain->dx * domain->dx) +
                                1.0 / (domain->dy * domain->dy)));
 
-  SORKernelShared<<<numBlocks, threadsPerBlock, shared_mem_sor>>>(
+  SORKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
       domain->jmax + 2, omg, coeff, 0);
@@ -192,7 +192,7 @@ double calculatePressureKernel(Matrix &P, const Matrix &RS,
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double) +
       threadsPerBlock.x * threadsPerBlock.y;
 
-  residualKernelShared<<<numBlocks, threadsPerBlock, shared_mem_residual>>>(
+  residualKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,
       domain->jmax + 2, d_rlocBlock);

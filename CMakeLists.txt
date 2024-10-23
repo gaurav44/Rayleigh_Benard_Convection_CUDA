@@ -13,6 +13,8 @@ add_custom_target(copy_compile_commands ALL
     DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json
 )
 
+find_package(CUDA)
+
 # Set the C++ and CUDA Standards
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

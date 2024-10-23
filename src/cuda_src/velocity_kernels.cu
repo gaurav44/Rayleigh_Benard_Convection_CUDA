@@ -61,7 +61,7 @@ void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
 
-  U_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  U_kernelShared_call<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dx,

@@ -95,7 +95,7 @@ void calculateFluxesKernel(const Matrix &U, const Matrix &V, Matrix &F,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 4 * sizeof(double);
 
-  FluxesKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  FluxesKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(T.d_container.data()),

@@ -73,7 +73,7 @@ void calculateRightHandSideKernel(const Matrix &F, const Matrix &G, Matrix &RS,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 2 * sizeof(double);
 
-  rightHandSideKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  rightHandSideKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(F.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain.dx, domain.dy,

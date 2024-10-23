@@ -103,7 +103,7 @@ void calculateTemperatureKernel(const Matrix &U, const Matrix &V, Matrix &T,
   size_t shared_mem =
       (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 3 * sizeof(double);
 
-  temperatureKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  temperatureKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(T.d_container.data()), domain.imax + 2,

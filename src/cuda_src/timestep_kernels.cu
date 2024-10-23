@@ -7,7 +7,7 @@
 
 namespace TimestepKernels {
 __global__ void velocityUMaxKernel(const double *U, int imax, int jmax,
-                                 double *max_results) {
+                                   double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -37,7 +37,7 @@ __global__ void velocityUMaxKernel(const double *U, int imax, int jmax,
 }
 
 __global__ void velocityVMaxKernel(const double *V, int imax, int jmax,
-                                 double *max_results) {
+                                   double *max_results) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -66,11 +66,10 @@ __global__ void velocityVMaxKernel(const double *V, int imax, int jmax,
   }
 }
 
-std::pair<double, double> calculateUVMaxKernel(const Matrix &U, const Matrix &V,
-                                    const Domain &domain, double *d_uBlockMax,
-                                    double *d_vBlockMax,
-                                    double *h_uBlockMax,
-                                    double *h_vBlockMax) {
+std::pair<double, double>
+calculateUVMaxKernel(const Matrix &U, const Matrix &V, const Domain &domain,
+                     double *d_uBlockMax, double *d_vBlockMax,
+                     double *h_uBlockMax, double *h_vBlockMax) {
   dim3 threadsPerBlock(BLOCK_SIZE_DT, BLOCK_SIZE_DT);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
@@ -78,14 +77,12 @@ std::pair<double, double> calculateUVMaxKernel(const Matrix &U, const Matrix &V,
   double h_uMax = 0.0;
   double h_vMax = 0.0;
 
-  velocityUMaxKernel<<<numBlocks, threadsPerBlock,
-                     BLOCK_SIZE_DT * BLOCK_SIZE_DT * sizeof(double)>>>(
+  velocityUMaxKernel<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()), domain.imax + 2,
       domain.jmax + 2, d_uBlockMax);
   CHECK(cudaGetLastError());
 
-  velocityVMaxKernel<<<numBlocks, threadsPerBlock,
-                     BLOCK_SIZE_DT * BLOCK_SIZE_DT * sizeof(double)>>>(
+  velocityVMaxKernel<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(V.d_container.data()), domain.imax + 2,
       domain.jmax + 2, d_vBlockMax);
   CHECK(cudaGetLastError());
