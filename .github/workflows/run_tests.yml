@@ -15,6 +15,10 @@ jobs:
       # Download the artifacts produced by the build workflow
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
+      
+       # Verify that the artifacts were downloaded and extracted properly
+      - name: List directory contents
+        run: ls -R ${{github.workspace}}/build
 
       # Run the tests using the downloaded build artifacts
       - name: Run CTest (Unit Tests)
