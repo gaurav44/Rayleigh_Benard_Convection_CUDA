@@ -32,7 +32,7 @@ jobs:
       
       # Upload build artifacts to be used in the separate test workflow
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: ${{github.workspace}}/build
