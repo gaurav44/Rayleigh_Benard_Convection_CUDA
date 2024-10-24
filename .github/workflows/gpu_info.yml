@@ -1,0 +1,20 @@
+name: GPU Info
+
+on: push
+
+jobs:
+  check_gpu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up NVIDIA CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.16
+        with:
+          cuda: '12.4.0'
+          
+      - name: Display GPU Driver Version
+        run: |
+          echo "Running nvidia-smi..."
+          nvidia-smi
