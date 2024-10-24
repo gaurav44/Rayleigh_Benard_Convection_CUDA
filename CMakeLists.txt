@@ -2,8 +2,9 @@
 cmake_minimum_required(VERSION 3.0)
 
 # Definition of the Project
-project(CFDLAB VERSION 1.0 LANGUAGES CXX CUDA)
+project(RBC_CUDA VERSION 1.0 LANGUAGES CXX CUDA)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+enable_testing()
 
 # Copy compile_commands.json to the project root for use with editors/tools
 add_custom_target(copy_compile_commands ALL
@@ -62,5 +63,9 @@ set_target_properties(kernels PROPERTIES
 target_include_directories(kernels PUBLIC include include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_include_directories(main PUBLIC include include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 
+add_subdirectory(tests)
+
 # Link the kernels library to the main executable
 target_link_libraries(main kernels)
+
+

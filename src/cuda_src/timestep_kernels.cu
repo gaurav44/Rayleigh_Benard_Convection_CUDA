@@ -17,19 +17,22 @@ __global__ void velocityUMaxKernel(const double *U, int imax, int jmax,
 
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
     int idx = imax * j + i;
-
     shared_data[shared_index] = fabs(U[idx]);
-    __syncthreads(); // Synchronize to ensure all data is loaded
-
-    // Perform reduction in shared memory
-    for (int s = (blockDim.x * blockDim.y) / 2; s > 0; s /= 2) {
-      if (shared_index < s) {
-        shared_data[shared_index] =
-            fmax(shared_data[shared_index], shared_data[shared_index + s]);
-      }
-      __syncthreads(); // Synchronize after each reduction step
-    }
   }
+  else {
+    shared_data[shared_index] = -INFINITY;
+  }
+  __syncthreads(); // Synchronize to ensure all data is loaded
+
+  // Perform reduction in shared memory
+  for (int s = (blockDim.x * blockDim.y) / 2; s > 0; s /= 2) {
+    if (shared_index < s) {
+      shared_data[shared_index] =
+          fmax(shared_data[shared_index], shared_data[shared_index + s]);
+    }
+    __syncthreads(); // Synchronize after each reduction step
+  }
+  
   // Write the result of this block's max to global memory
   if (threadIdx.x == 0 && threadIdx.y == 0) {
     max_results[blockIdx.x * gridDim.y + blockIdx.y] = shared_data[0];
@@ -47,19 +50,22 @@ __global__ void velocityVMaxKernel(const double *V, int imax, int jmax,
 
   if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
     int idx = imax * j + i;
-
     shared_data[shared_index] = fabs(V[idx]);
-    __syncthreads(); // Synchronize to ensure all data is loaded
-
-    // Perform reduction in shared memory
-    for (int s = (blockDim.x * blockDim.y) / 2; s > 0; s /= 2) {
-      if (shared_index < s) {
-        shared_data[shared_index] =
-            fmax(shared_data[shared_index], shared_data[shared_index + s]);
-      }
-      __syncthreads(); // Synchronize after each reduction step
-    }
   }
+  else {
+    shared_data[shared_index] = -INFINITY;
+  }
+  __syncthreads(); // Synchronize to ensure all data is loaded
+
+  // Perform reduction in shared memory
+  for (int s = (blockDim.x * blockDim.y) / 2; s > 0; s /= 2) {
+    if (shared_index < s) {
+      shared_data[shared_index] =
+          fmax(shared_data[shared_index], shared_data[shared_index + s]);
+    }
+    __syncthreads(); // Synchronize after each reduction step
+  }
+  
   // Write the result of this block's max to global memory
   if (threadIdx.x == 0 && threadIdx.y == 0) {
     max_results[blockIdx.x * gridDim.y + blockIdx.y] = shared_data[0];
