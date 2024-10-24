@@ -18,8 +18,7 @@ jobs:
       
        # Verify that the artifacts were downloaded and extracted properly
       - name: List directory contents
-        run: ls -R ${{github.workspace}}/build
-
+        run: ls -la
       # Run the tests using the downloaded build artifacts
       - name: Run CTest (Unit Tests)
         working-directory: ${{github.workspace}}/build
