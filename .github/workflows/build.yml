@@ -29,13 +29,18 @@ jobs:
         run: make -j      
 
       - run: echo "This job's status is ${{ job.status }}."
+
+       # Run the tests using the downloaded build artifacts
+      - name: Run CTest (Unit Tests)
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
       
       # Upload build artifacts to be used in the separate test workflow
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: ${{github.workspace}}/build
+      #- name: Upload Build Artifacts
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: build-artifacts
+      #    path: ${{github.workspace}}/build
       
       
 
