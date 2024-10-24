@@ -15,8 +15,6 @@ jobs:
       # Download the artifacts produced by the build workflow
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
 
       # Run the tests using the downloaded build artifacts
       - name: Run CTest (Unit Tests)
