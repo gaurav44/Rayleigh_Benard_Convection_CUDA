@@ -1,4 +1,4 @@
-name: Ubuntu
+name: Build
 on: push
 jobs:
   UbuntuRun:
@@ -30,6 +30,12 @@ jobs:
 
       - run: echo "This job's status is ${{ job.status }}."
       
+      # Upload build artifacts to be used in the separate test workflow
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{github.workspace}}/build
       
       
 
