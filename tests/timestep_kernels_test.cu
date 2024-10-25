@@ -90,6 +90,10 @@ TEST(TimeStepKernelsTest, HandlesBasicInput) {
     // Verify that the device result matches the expected result
     EXPECT_NEAR(h_uMaxExpected, h_uMax, 1e-8);
     EXPECT_NEAR(h_vMaxExpected, h_vMax, 1e-8);
+    cudaFree(d_uBlockMax);
+    cudaFree(d_vBlockMax);
+    delete(h_uBlockMax);
+    delete(h_vBlockMax);
 }
 
 // Main function to run all tests

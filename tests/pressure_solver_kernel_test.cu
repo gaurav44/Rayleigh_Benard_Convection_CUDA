@@ -211,6 +211,9 @@ TEST(ResidualKernelTest, HandlesBasicInput) {
     h_rloc = sqrt(h_rloc);
     rloc = sqrt(rloc);
     EXPECT_NEAR(h_rloc, rloc, 1e-8);
+    cudaFree(d_P);
+    cudaFree(d_RS);
+    cudaFree(d_rlocBlock);
 }
 
 // Main function to run all tests

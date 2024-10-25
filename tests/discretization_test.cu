@@ -109,6 +109,13 @@ TEST(ConvectionTests, HandlesBasicInput) {
     EXPECT_NEAR(h_uResult, uResult, 1e-8);
     EXPECT_NEAR(h_vResult, vResult, 1e-8);
     EXPECT_NEAR(h_tResult, tResult, 1e-8);
+
+    cudaFree(d_U);
+    cudaFree(d_V);
+    cudaFree(d_T);
+    cudaFree(d_uResult);
+    cudaFree(d_vResult);
+    cudaFree(d_tResult);
 }
 
 // Test case for diffusion_Kernel
