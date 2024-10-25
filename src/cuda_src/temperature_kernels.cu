@@ -6,21 +6,21 @@
 #include <thrust/device_vector.h>
 
 namespace TemperatureKernels {
-//__global__ void temperature_kernel_call(const double *U, const double *V,
-//                                        double *T, const double *T_old,
-//                                        double dx, double dy, int imax,
-//                                        double jmax, double gamma, double
-//                                        alpha, double dt) {
-//  int i = blockIdx.x * blockDim.x + threadIdx.x;
-//  int j = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//  if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
-//    int idx = j * imax + i;
-//    T[idx] =
-//        T_old[idx] + dt * (alpha * Discretization::diffusion(T_old, i, j) -
-//                           Discretization::convection_T(U, V, T_old, i, j));
-//  }
-//}
+__global__ void temperature_kernel_call(const double *U, const double *V,
+                                       double *T, const double *T_old,
+                                       double dx, double dy, int imax,
+                                       int jmax, double gamma, double
+                                       alpha, double dt) {
+ int i = blockIdx.x * blockDim.x + threadIdx.x;
+ int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+ if (i > 0 && j > 0 && i < imax - 1 && j < jmax - 1) {
+   int idx = j * imax + i;
+   T[idx] =
+       T_old[idx] + dt * (alpha * Discretization::diffusion(T_old, i, j) -
+                          Discretization::convection_T(U, V, T_old, i, j));
+ }
+}
 
 __global__ void temperatureKernelShared(const double *U, const double *V,
                                         double *T, int imax, int jmax,
@@ -85,9 +85,8 @@ __global__ void temperatureKernelShared(const double *U, const double *V,
   if (i < imax - 1 && j < jmax - 1) {
     T[global_idx] =
         shared_Told[local_idx] +
-        dt * (alpha * Discretization::diffusionSharedMem(
-                          shared_Told, local_i, local_j, blockDim.x + 2) -
-              Discretization::convection_TSharedMem(shared_U, shared_V,
+        dt * (alpha * Discretization::diffusionSharedMem(shared_Told, local_i, local_j, blockDim.x + 2) 
+              - Discretization::convection_TSharedMem(shared_U, shared_V,
                                                     shared_Told, local_i,
                                                     local_j, blockDim.x + 2));
   }
