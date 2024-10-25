@@ -188,10 +188,6 @@ double calculatePressureKernel(Matrix &P, const Matrix &RS,
   // std::vector<double> h_rlocBlock(numBlocks.x*numBlocks.y);
   double h_rloc = 0.0;
 
-  size_t shared_mem_residual =
-      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double) +
-      threadsPerBlock.x * threadsPerBlock.y;
-
   residualKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(P.d_container.data()),
       thrust::raw_pointer_cast(RS.d_container.data()), domain->imax + 2,

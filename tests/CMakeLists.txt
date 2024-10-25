@@ -28,6 +28,12 @@ set(SOURCES_FLUXES_TEST
     ../src/cuda_src/fluxes_kernels.cu
     ../src/cuda_src/discretization.cu)
 
+set(SOURCES_PRESOLVER_TEST
+    pressure_solver_kernel_test.cu
+    discretization_host.cpp
+    ../src/cuda_src/pressure_solver_kernels.cu
+    ../src/cuda_src/discretization.cu)
+
 
 add_executable(rhs_test ${SOURCES_RS_TEST})
 add_test(NAME rhs_test COMMAND rhs_test)
@@ -47,12 +53,16 @@ add_test(NAME temp_test COMMAND temp_test)
 add_executable(fluxes_test ${SOURCES_FLUXES_TEST})
 add_test(NAME fluxes_test COMMAND fluxes_test)
 
+add_executable(pres_solver_test ${SOURCES_PRESOLVER_TEST})
+add_test(NAME pres_solver_test COMMAND pres_solver_test)
+
 target_link_libraries(rhs_test gtest gtest_main cuda)
 target_link_libraries(vel_test gtest gtest_main cuda)
 target_link_libraries(dt_test gtest gtest_main cuda)
 target_link_libraries(discretization_test gtest gtest_main cuda)
 target_link_libraries(temp_test gtest gtest_main cuda)
 target_link_libraries(fluxes_test gtest gtest_main cuda)
+target_link_libraries(pres_solver_test gtest gtest_main cuda)
 
 set_target_properties(rhs_test PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
@@ -78,9 +88,14 @@ set_target_properties(fluxes_test PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_ARCHITECTURES "61"
 )
+set_target_properties(pres_solver_test PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_ARCHITECTURES "61"
+)
 target_include_directories(rhs_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_include_directories(vel_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_include_directories(dt_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_include_directories(discretization_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_include_directories(temp_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
 target_include_directories(fluxes_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
+target_include_directories(pres_solver_test PUBLIC ../include ../include/cuda_kernels ${CUDA_TOOLKIT_ROOT_DIR}/include)
