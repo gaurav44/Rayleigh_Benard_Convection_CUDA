@@ -6,9 +6,9 @@
 #include "block_sizes.hpp"
 #include <thrust/device_vector.h>
 #include <thrust/copy.h>
-#include "temperature_kernels.hpp"
 #include "discretization_host.hpp"
 #include "discretization.hpp"
+#include "fluxes_kernels.hpp"
 #include "cuda_utils.hpp"
 #include <iostream>
 
@@ -31,20 +31,22 @@ void initArray(double* arr, double* arr2, int size) {
     }
 }
 
-// Test case for TempratureKernelShared
-TEST(TemperatureKernelsTest, HandlesBasicInput) {
+// Test case for FluxesKernelShared
+TEST(FluxesKernelsTest, HandlesBasicInput) {
     // Define grid size and block size
     int imax = 36, jmax = 36;
     int size = 36*36;
-    double dx = 0.1, dy = 0.1, gamma=0.5, alpha = 0.2, dt = 0.05;
+    double dx = 0.1, dy = 0.1, gamma=0.5, alpha = 0.2, dt = 0.05, nu = 0.0296, GX = 1.0, GY = -9.81, beta = 0.00179 ;
 
     // Set up test arrays for U and V
-    double h_U[size], h_V[size], h_T[size], h_Told[size], h_T_expected[size];
+    double h_U[size], h_V[size], h_T[size], h_F[size], h_G[size], h_F_expected[size], h_G_expected[size];
     initArray(h_U, size);
     initArray(h_V, size);
     initArray(h_T, size);
-    initArray(h_Told, h_T, size);
-    initArray(h_T_expected, h_T, size);
+    initArray(h_F, size);
+    initArray(h_F_expected, h_F, size);
+    initArray(h_G, size);
+    initArray(h_G_expected, h_G, size);
     // double h_U[36] = {1.0, 1.2, 1.4, 1.6, 1.8, 1.9,
     //                   2.0, 2.2, 2.4, 2.6, 2.8, 1.6,
     //                   3.0, 3.2, 3.4, 3.6, 3.8, 1.5,
@@ -87,65 +89,60 @@ TEST(TemperatureKernelsTest, HandlesBasicInput) {
                         gamma);
 
     // Device pointers
-    double *d_U, *d_V, *d_T, *d_Told;
+    double *d_U, *d_V, *d_T, *d_F, *d_G;
     
     // Allocate device memory
     CHECK(cudaMalloc((void**)&d_U, size * sizeof(double)));
     CHECK(cudaMalloc((void**)&d_V, size * sizeof(double)));
     CHECK(cudaMalloc((void**)&d_T, size * sizeof(double)));
-    CHECK(cudaMalloc((void**)&d_Told, size * sizeof(double)));
+    CHECK(cudaMalloc((void**)&d_F, size * sizeof(double)));
+    CHECK(cudaMalloc((void**)&d_G, size * sizeof(double)));
 
     // Copy data from host to device
     CHECK(cudaMemcpy(d_U, h_U, size * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_V, h_V, size * sizeof(double), cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_T, h_T, size * sizeof(double), cudaMemcpyHostToDevice));
-    CHECK(cudaMemcpy(d_Told, h_Told, size * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_F, h_F, size * sizeof(double), cudaMemcpyHostToDevice));
+    CHECK(cudaMemcpy(d_G, h_G, size * sizeof(double), cudaMemcpyHostToDevice));
 
     // Launch kernel
-    dim3 threadsPerBlock(BLOCK_SIZE_TEMP, BLOCK_SIZE_TEMP);
-    dim3 numBlocks((imax + BLOCK_SIZE_TEMP - 1) / BLOCK_SIZE_TEMP,
-                   (jmax + BLOCK_SIZE_TEMP - 1) / BLOCK_SIZE_TEMP);
-    TemperatureKernels::temperatureKernelShared<<<numBlocks, threadsPerBlock>>>(d_U, d_V, d_T, imax, jmax, alpha, dt);
-    // TemperatureKernels::temperature_kernel_call<<<numBlocks, threadsPerBlock>>>(d_U, d_V, d_T, d_Told, dx, dy, imax, jmax, gamma, alpha, dt);
+    dim3 threadsPerBlock(BLOCK_SIZE_FG, BLOCK_SIZE_FG);
+    dim3 numBlocks((imax + BLOCK_SIZE_FG - 1) / BLOCK_SIZE_FG,
+                   (jmax + BLOCK_SIZE_FG - 1) / BLOCK_SIZE_FG);
+    FluxesKernels::FluxesKernelShared<<<numBlocks, threadsPerBlock>>>(d_U, d_V, d_T, d_F, d_G, imax, jmax, nu, dt, GX, GY, beta);
     CHECK(cudaGetLastError());
     
     // Copy result back to host
-    CHECK(cudaMemcpy(&h_T, d_T, size*sizeof(double), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(&h_F, d_F, size*sizeof(double), cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(&h_G, d_G, size*sizeof(double), cudaMemcpyDeviceToHost));
     CHECK(cudaGetLastError());
 
     // Manually compute the expected result on host (for verification)
-    for (int i = 1; i < imax-1; i++) {
-        for(int j = 1; j < jmax-1; j++) {
+    for(int i = 1; i < imax - 2; i++){
+        for(int j = 1; j < jmax - 1; j++) {
             int idx = j * imax + i;
-            h_T_expected[idx] =
-                h_Told[idx] + dt * (alpha * DiscretizationHost::diffusion(h_Told, i, j)
-                                    - DiscretizationHost::convection_T(h_U, h_V, h_Told, i, j));
-            // if(h_T_expected[idx] - h_T[idx] > 1e-8) 
-            //     std::cout << i << " " << j << " " << h_T_expected[idx] << " " << h_T[idx] << "\n";
-        }
+            h_F_expected[idx] = h_U[idx] + dt*(nu*DiscretizationHost::diffusion(h_U, i, j) 
+                                             - DiscretizationHost::convection_u(h_U, h_V, i, j)) - (beta*dt/2
+                                             *(h_T[idx] + h_T[idx+1]))*GX;
+        }       
     }
-    CHECK(cudaGetLastError());
-    // Verify that the device result matches the expected result
-    // for (int j = 0; j < jmax; j++) {
-    //     for(int i = 0; i < imax; i++) {
-    //         int idx = j * imax + i;
-    //         // if(h_T_expected[idx] - h_T[idx] > 1e-8) 
-    //         std::cout << h_T_expected[idx] << " ";
-    //         // std::cout << i << " " << j << " " << h_T_expected[idx] << " " << h_T[idx] << "\n";
-    //         // EXPECT_NEAR(h_T_expected[idx], h_T[idx], 1e-8);
-    //     }
-    //     std::cout << "\n";
-    // }
-    // std::cout << "**************************************************************************\n";
-    for (int j = 0; j < jmax; j++) {
-        for(int i = 0; i < imax; i++) {
+
+    for (int i = 1; i < imax - 1; i++) {
+        for(int j = 1; j < jmax - 2; j++) {
             int idx = j * imax + i;
-            // if(h_T_expected[idx] - h_T[idx] > 1e-8) 
-            // std::cout << h_T[idx] << " ";
-            // std::cout << i << " " << j << " " << h_T_expected[idx] << " " << h_T[idx] << "\n";
-            EXPECT_NEAR(h_T_expected[idx], h_T[idx], 1e-8);
+            h_G_expected[idx] = h_V[idx] + dt*(nu*DiscretizationHost::diffusion(h_V, i, j) 
+                                - DiscretizationHost::convection_v(h_U, h_V, i, j)) - (beta*dt/2 
+                                *(h_T[idx] + h_T[idx+imax]))*GY;
+        }    
+    } 
+
+    for (int i = 1; i < imax; i++) {
+        for(int j = 1; j < jmax; j++) {
+            int idx = j * imax + i;
+            // std::cout << h_F_expected[idx] << " " <<"\n";
+            EXPECT_NEAR(h_F_expected[idx], h_F[idx], 1e-8);
+            EXPECT_NEAR(h_G_expected[idx], h_G[idx], 1e-8);
         }
-        // std::cout << "\n";
     }
 }
 

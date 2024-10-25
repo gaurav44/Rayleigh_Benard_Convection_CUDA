@@ -18,7 +18,7 @@ void initArray(thrust::host_vector<double>& arr, int size) {
     // Initialize the random number generator (Mersenne Twister engine)
     std::mt19937 gen(rd());
     // Create a uniform distribution between 1 and 5
-    std::uniform_real_distribution<> dis(1.0, 5.0);
+    std::uniform_real_distribution<> dis(-5.0, 5.0);
     for (int i = 0; i < size; ++i) {
         arr[i] = dis(gen);
     }

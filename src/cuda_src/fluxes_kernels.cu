@@ -42,6 +42,7 @@ __global__ void FluxesKernelShared(const double *U, const double *V,
       i < imax - 1) {
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
+    shared_T[local_idx + 1] = T[global_idx + 1];
   }
 
   // Bottom Halo
