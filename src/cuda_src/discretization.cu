@@ -193,7 +193,7 @@ __device__ double Discretization::diffusionSharedMem(const double *A, int i,
   int idx = imax * j + i;
   int idx_right = idx + 1;//imax * j + i + 1;
   int idx_left = idx - 1;//imax * j + i - 1;
-  double term1 = (A[idx_right] - 2 * A[idx] + A[idx_left]) * _one_dx * _one_dx;
+  double term1 = (A[idx_right] - 2 * A[idx] + A[idx_left]) * _one_dx * _one_dx;//(A[idx_right] - 2 * A[idx] + A[idx_left]) * _one_dx * _one_dx;
 
   int idx_top = idx + imax;//imax * (j + 1) + i;
   int idx_bottom = idx - imax;//imax * (j - 1) + i;

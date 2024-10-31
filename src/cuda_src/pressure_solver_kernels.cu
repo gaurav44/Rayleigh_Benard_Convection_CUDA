@@ -31,41 +31,34 @@ __global__ void SORKernelShared(double *P, const double *RS, int imax, int jmax,
   int local_idx = local_j * (blockDim.x + 2) + local_i;
 
   // load the central part into shared memory
-  if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
-      local_j < blockDim.y + 1)
+  if (i < imax && j < jmax/*local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 && local_j < blockDim.y + 1*/)
     shared_P[local_idx] = P[global_idx];
 
   // Left Halo
-  if (threadIdx.x == 0 && i > 0)
+  if (threadIdx.x == 0)
     shared_P[local_idx - 1] = P[global_idx - 1];
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 ||
-       (blockIdx.x == gridDim.x - 1) &&
-           threadIdx.x == (imax - 2) % blockDim.x) &&
-      i < imax - 1)
+  if (threadIdx.x == blockDim.x - 1 /*|| (blockIdx.x == gridDim.x - 1) && threadIdx.x == (imax - 2) % blockDim.x) && i < imax - 1*/)
     shared_P[local_idx + 1] = P[global_idx + 1];
 
   // Bottom Halo
-  if (threadIdx.y == 0 && j > 0)
+  if (threadIdx.y == 0)
     shared_P[local_idx - blockDim.x - 2] = P[global_idx - imax];
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 ||
-       (blockDim.y == gridDim.y - 1 &&
-        threadIdx.y == (jmax - 2) % blockDim.y)) &&
-      j < jmax - 1)
+  if (threadIdx.y == blockDim.y - 1 /*|| (blockDim.y == gridDim.y - 1 && threadIdx.y == (jmax - 2) % blockDim.y)) && j < jmax - 1*/)
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
 
   __syncthreads();
 
   if (i < imax - 1 && j < jmax - 1 && (i + j) % 2 == color) {
-    shared_P[local_idx] =
+    P[global_idx] =
         (1.0 - omg) * shared_P[local_idx] +
         coeff * (Discretization::sor_helperSharedMem(shared_P, local_i, local_j,
                                                      blockDim.x + 2) -
                  RS[global_idx]);
-    P[global_idx] = shared_P[local_idx];
+    // P[global_idx] = shared_P[local_idx];
   }
 }
 
@@ -99,34 +92,27 @@ __global__ void residualKernelShared(const double *P, const double *RS,
   int local_idx = local_j * (blockDim.x + 2) + local_i;
 
   // load the central part into shared memory
-  if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
-      local_j < blockDim.y + 1) {
+  if (i < imax && j < jmax) {
     shared_P[local_idx] = P[global_idx];
   }
 
   // Left Halo
-  if (threadIdx.x == 0 && i > 0) {
+  if (threadIdx.x == 0) {
     shared_P[local_idx - 1] = P[global_idx - 1];
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 ||
-       (blockIdx.x == gridDim.x - 1 &&
-        threadIdx.x == (imax - 2) % blockDim.x)) &&
-      i < imax - 1) {
+  if (threadIdx.x == blockDim.x - 1) {
     shared_P[local_idx + 1] = P[global_idx + 1];
   }
 
   // Bottom Halo
-  if (threadIdx.y == 0 && j > 0) {
+  if (threadIdx.y == 0) {
     shared_P[local_idx - blockDim.x - 2] = P[global_idx - imax];
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 ||
-      (blockIdx.y == gridDim.y - 1 &&
-       threadIdx.y == (jmax - 2) % blockDim.y)) &&
-      j < jmax - 1) {
+  if (threadIdx.y == blockDim.y - 1) {
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
 

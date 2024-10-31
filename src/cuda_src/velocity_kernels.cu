@@ -58,9 +58,6 @@ void U_kernel(Matrix &U, const Matrix &F, const Matrix &P,
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  size_t shared_mem =
-      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
-
   U_kernelShared_call<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()),
@@ -125,10 +122,7 @@ void V_kernel(Matrix &V, const Matrix &G, const Matrix &P,
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  size_t shared_mem =
-      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
-
-  V_kernelShared_call<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  V_kernelShared_call<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(G.d_container.data()),
       thrust::raw_pointer_cast(P.d_container.data()), domain.dy,
@@ -154,18 +148,17 @@ __global__ void velocityKernelShared(double *U, double *V, const double *F,
   int local_idx = local_j * (blockDim.x + 2) + local_i;
 
   // load the central part into shared memory
-  if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
-      local_j < blockDim.y + 1) {
+  if (i < imax && j < jmax/*local_i < blockDim.x + 1 && local_j < blockDim.y + 1*/) {
     shared_P[local_idx] = P[global_idx];
   }
 
   // Right Halo
-  if (threadIdx.x == blockDim.x - 1 && i < imax - 1) {
+  if (threadIdx.x == blockDim.x - 1) {
     shared_P[local_idx + 1] = P[global_idx + 1];
   }
 
   // Top Halo
-  if (threadIdx.y == blockDim.y - 1 && j < jmax - 1) {
+  if (threadIdx.y == blockDim.y - 1) {
     shared_P[local_idx + blockDim.x + 2] = P[global_idx + imax];
   }
 
@@ -190,10 +183,7 @@ void calculateVelocitiesKernel(Matrix &U, Matrix &V, const Matrix &F,
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-  size_t shared_mem =
-      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 1 * sizeof(double);
-
-  velocityKernelShared<<<numBlocks, threadsPerBlock, shared_mem>>>(
+  velocityKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
       thrust::raw_pointer_cast(V.d_container.data()),
       thrust::raw_pointer_cast(F.d_container.data()),

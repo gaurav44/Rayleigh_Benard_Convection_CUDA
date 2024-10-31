@@ -49,6 +49,7 @@ TEST(RightHandSideKernelTest, HandlesBasicInput) {
     dim3 numBlocks((imax + BLOCK_SIZE_RS - 1) / BLOCK_SIZE_RS,
                    (jmax + BLOCK_SIZE_RS - 1) / BLOCK_SIZE_RS);
     RightHandSideKernels::rightHandSideKernelShared<<<numBlocks, threadsPerBlock>>>
+    // RightHandSideKernels::RS_kernel_call<<<numBlocks, threadsPerBlock>>>
     (thrust::raw_pointer_cast(d_F.data()),
      thrust::raw_pointer_cast(d_G.data()),
      thrust::raw_pointer_cast(d_RS.data()), dx, dy, imax, jmax, dt);

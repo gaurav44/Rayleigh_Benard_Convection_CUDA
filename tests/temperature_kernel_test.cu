@@ -72,6 +72,7 @@ TEST(TemperatureKernelsTest, HandlesBasicInput) {
     dim3 numBlocks((imax + BLOCK_SIZE_TEMP - 1) / BLOCK_SIZE_TEMP,
                    (jmax + BLOCK_SIZE_TEMP - 1) / BLOCK_SIZE_TEMP);
     TemperatureKernels::temperatureKernelShared<<<numBlocks, threadsPerBlock>>>(d_U, d_V, d_T, imax, jmax, alpha, dt);
+    TemperatureKernels::temperature_kernel_call<<<numBlocks, threadsPerBlock>>>(d_U, d_V, d_T, d_Told, dx, dy, imax, jmax, gamma, alpha, dt);
     CHECK(cudaGetLastError());
     
     // Copy result back to host

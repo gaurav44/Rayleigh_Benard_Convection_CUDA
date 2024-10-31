@@ -29,7 +29,7 @@ int main() {
   boundary.applyPressure();
 
   double t = 0;
-  double t_end = 10000;
+  double t_end = 1000;
   int timestep = 0;
   auto start = std::chrono::high_resolution_clock::now();
   // Time loop

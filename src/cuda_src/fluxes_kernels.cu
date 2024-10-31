@@ -23,38 +23,34 @@ __global__ void FluxesKernelShared(const double *U, const double *V,
   int local_idx = local_j * (blockDim.x + 2) + local_i;
 
   // load the central part into shared memory
-  if (local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 &&
-      local_j < blockDim.y + 1) {
+  if (i < imax && j < jmax /*local_i > 0 && local_j > 0 && local_i < blockDim.x + 1 && local_j < blockDim.y + 1*/) {
     shared_U[local_idx] = U[global_idx];
     shared_V[local_idx] = V[global_idx];
     shared_T[local_idx] = T[global_idx];
   }
 
   // Left Halo
-  if (threadIdx.x == 0 && i > 0) {
+  if (threadIdx.x == 0) {
     shared_U[local_idx - 1] = U[global_idx - 1];
     shared_V[local_idx - 1] = V[global_idx - 1];
   }
 
   // Right Halo
-  if ((threadIdx.x == blockDim.x - 1 ||
-      (blockIdx.x == gridDim.x - 1 && threadIdx.x == (imax - 2) % blockDim.x)) &&
-      i < imax - 1) {
+  if (threadIdx.x == blockDim.x - 1) {
     shared_U[local_idx + 1] = U[global_idx + 1];
     shared_V[local_idx + 1] = V[global_idx + 1];
     shared_T[local_idx + 1] = T[global_idx + 1];
   }
 
   // Bottom Halo
-  if (threadIdx.y == 0 && j > 0) {
+  if (threadIdx.y == 0) {
     shared_U[local_idx - blockDim.x - 2] = U[global_idx - imax];
     shared_V[local_idx - blockDim.x - 2] = V[global_idx - imax];
     shared_V[local_idx - blockDim.x - 2 + 1] = V[global_idx - imax + 1];
   }
 
   // Top Halo
-  if ((threadIdx.y == blockDim.y - 1 || (blockIdx.y == gridDim.y - 1 && threadIdx.y == (jmax - 2) % blockDim.y)) &&
-      j < jmax - 1) {
+  if (threadIdx.y == blockDim.y - 1){
     shared_U[local_idx + blockDim.x + 2] = U[global_idx + imax];
     shared_U[local_idx + blockDim.x + 2 - 1] = U[global_idx + imax - 1];
     shared_V[local_idx + blockDim.x + 2] = V[global_idx + imax];
@@ -92,9 +88,6 @@ void calculateFluxesKernel(const Matrix &U, const Matrix &V, Matrix &F,
   dim3 threadsPerBlock(BLOCK_SIZE_FG, BLOCK_SIZE_FG);
   dim3 numBlocks((domain.imax + 2 + threadsPerBlock.x - 1) / threadsPerBlock.x,
                  (domain.jmax + 2 + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-  size_t shared_mem =
-      (threadsPerBlock.x + 2) * (threadsPerBlock.y + 2) * 4 * sizeof(double);
 
   FluxesKernelShared<<<numBlocks, threadsPerBlock>>>(
       thrust::raw_pointer_cast(U.d_container.data()),
